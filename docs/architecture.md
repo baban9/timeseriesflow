@@ -15,16 +15,18 @@ flowchart TB
 
     subgraph CoreLayer["Core layer"]
         FLOW["Flow engine"]
+        RUN["EntityRunner"]
         ENT["entity.split_by_entity"]
         PROC["processor.call_processor"]
     end
 
     subgraph InfraLayer["Infrastructure layer"]
-        CKPT["CheckpointStore\n(FileCheckpointStore)"]
+        CKPT["CheckpointBackend\n(LocalCheckpoint)"]
         RETRY["RetryPolicy"]
         PROG["ProgressTracker"]
         MEM["MemoryTracker"]
         LOG["logging.setup"]
+        SRC["sources.BaseSource\n(CSV, Parquet, future Mongo)"]
     end
 
     subgraph DataLayer["Data layer"]
@@ -33,8 +35,12 @@ flowchart TB
         RES["EntityResult / RunSummary"]
     end
 
-    EP --> FLOW
+    EP --> RUN
     FC --> FLOW
+    RUN --> SRC
+    RUN --> FLOW
+    RUN --> CKPT
+    RUN --> PROG
     FLOW --> ENT
     FLOW --> PROC
     FLOW --> CKPT
@@ -42,6 +48,8 @@ flowchart TB
     FLOW --> PROG
     FLOW --> MEM
     FLOW --> LOG
+    FLOW --> SRC
+    SRC --> DF
     ENT --> DF
     PROC --> EP
     PROC --> CTX
@@ -56,16 +64,29 @@ flowchart TB
 | `core.entity` | Entity discovery and dataframe splitting |
 | `core.processor` | Processor protocol and invocation |
 | `config` | `FlowConfig` dataclass |
-| `checkpoint` | Resume support via abstract store + file backend |
+| `checkpoint` | Resume support via `CheckpointBackend` and `LocalCheckpoint` |
+| `runner` | `EntityRunner` top-level orchestrator |
 | `retry` | Exponential backoff retry policy |
 | `progress` | Rich progress bar and run summary |
 | `memory` | Peak RSS tracking via psutil |
 | `logging` | Console logging setup |
+| `sources` | Data source abstraction (CSV, Parquet, future MongoDB) |
 | `cli` | Typer CLI entry points |
 | `types` | Shared dataclasses and type aliases |
 | `exceptions` | Error hierarchy |
 
 ## Execution flow
+
+### EntityRunner (recommended)
+
+1. `EntityRunner.run()` validates and loads the source.
+2. Entities are discovered from the flow `entity_key`.
+3. Completed entities are skipped via checkpoint.
+4. Pending entities are processed in batches with retries.
+5. Checkpoints and progress are updated per entity.
+6. Returns `RunSummary` with statistics.
+
+### Legacy Flow
 
 1. `Flow.run(df)` lists unique entities from `entity_column`.
 2. If resume is enabled, completed entities are loaded from checkpoint store.

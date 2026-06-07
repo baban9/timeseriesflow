@@ -3,20 +3,22 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from rich.console import Console
 from rich.progress import BarColumn, Progress, TaskProgressColumn, TextColumn, TimeElapsedColumn
 
-from timeseriesflow.types import EntityId, EntityResult
+from timeseriesflow.types import EntityId, FlowEntityResult
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
+    from timeseriesflow.api.result import EntityResult
+
 
 @dataclass(slots=True)
 class RunSummary:
-    """Aggregate statistics for a completed flow run."""
+    """Aggregate statistics for a completed entity run."""
 
     total_entities: int
     processed: int
@@ -25,7 +27,9 @@ class RunSummary:
     skipped: int
     total_duration_seconds: float
     peak_memory_mb: float
-    results: list[EntityResult] = field(default_factory=list)
+    results: list[Any] = field(default_factory=list)
+    batches_processed: int = 0
+    total_retries: int = 0
 
     @property
     def success_rate(self) -> float:
@@ -89,10 +93,12 @@ class ProgressTracker:
 def build_summary(
     *,
     total_entities: int,
-    results: Sequence[EntityResult],
+    results: Sequence["FlowEntityResult | EntityResult"],
     skipped: int,
     total_duration_seconds: float,
     peak_memory_mb: float,
+    batches_processed: int = 0,
+    total_retries: int = 0,
 ) -> RunSummary:
     succeeded = sum(1 for result in results if result.success)
     failed = sum(1 for result in results if result.failed)
@@ -105,4 +111,6 @@ def build_summary(
         total_duration_seconds=total_duration_seconds,
         peak_memory_mb=peak_memory_mb,
         results=list(results),
+        batches_processed=batches_processed,
+        total_retries=total_retries,
     )

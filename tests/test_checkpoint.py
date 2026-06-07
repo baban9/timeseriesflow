@@ -1,8 +1,8 @@
-"""Tests for checkpoint storage."""
+"""Tests for legacy checkpoint store compatibility."""
 
 from __future__ import annotations
 
-from timeseriesflow.checkpoint import FileCheckpointStore, build_checkpoint_record
+from timeseriesflow.checkpoint import FileCheckpointStore, LocalCheckpoint, build_checkpoint_record
 
 
 def test_file_checkpoint_store_roundtrip(tmp_path) -> None:
@@ -19,6 +19,7 @@ def test_file_checkpoint_store_roundtrip(tmp_path) -> None:
 
     completed = store.load_completed_entities()
     assert "sensor-1" in completed
+    assert isinstance(store.backend, LocalCheckpoint)
 
 
 def test_file_checkpoint_store_clear(tmp_path) -> None:

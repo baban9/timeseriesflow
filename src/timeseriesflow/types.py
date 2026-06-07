@@ -26,8 +26,8 @@ class RunContext:
 
 
 @dataclass(slots=True)
-class EntityResult:
-    """Outcome of processing a single entity."""
+class FlowEntityResult:
+    """Outcome of processing a single entity via the legacy Flow engine."""
 
     entity_id: EntityId
     success: bool

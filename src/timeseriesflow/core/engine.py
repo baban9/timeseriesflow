@@ -7,20 +7,17 @@ from typing import TYPE_CHECKING
 
 import pandas as pd
 
-from timeseriesflow.checkpoint import (
-    CheckpointStore,
-    FileCheckpointStore,
-    build_checkpoint_record,
-)
-from timeseriesflow.core.entity import list_entities, split_by_entity
+from timeseriesflow.checkpoint import CheckpointBackend, LocalCheckpoint
+from timeseriesflow.core.entity import iter_entity_groups, list_entities
 from timeseriesflow.core.processor import EntityProcessor, call_processor, validate_processor
 from timeseriesflow.exceptions import EntityProcessingError, FlowError
 from timeseriesflow.logging import get_logger, setup_logging
 from timeseriesflow.memory import MemoryTracker
-from timeseriesflow.progress import ProgressTracker, build_summary
-from timeseriesflow.types import EntityId, EntityResult, RunSummary
+from timeseriesflow.progress import ProgressTracker, RunSummary, build_summary
+from timeseriesflow.types import EntityId, FlowEntityResult
 
 if TYPE_CHECKING:
+    from timeseriesflow.checkpoint import CheckpointStore
     from timeseriesflow.config import FlowConfig
 
 logger = get_logger("engine")
@@ -34,18 +31,32 @@ class Flow:
         processor: EntityProcessor,
         config: FlowConfig,
         *,
-        checkpoint_store: CheckpointStore | None = None,
+        checkpoint: CheckpointBackend | CheckpointStore | None = None,
     ) -> None:
         validate_processor(processor)
         self.processor = processor
         self.config = config
-        self.checkpoint_store = checkpoint_store or self._build_checkpoint_store()
+        self.checkpoint = self._resolve_checkpoint(checkpoint)
         setup_logging(self.config.log_level)  # type: ignore[arg-type]
 
-    def _build_checkpoint_store(self) -> CheckpointStore | None:
+    def _resolve_checkpoint(
+        self,
+        checkpoint: CheckpointBackend | CheckpointStore | None,
+    ) -> CheckpointBackend | None:
+        if checkpoint is not None:
+            if isinstance(checkpoint, CheckpointBackend):
+                return checkpoint
+            from timeseriesflow.checkpoint import FileCheckpointStore
+
+            if isinstance(checkpoint, FileCheckpointStore):
+                return checkpoint.backend
+            raise TypeError("checkpoint must be CheckpointBackend or FileCheckpointStore")
+        return self._build_checkpoint()
+
+    def _build_checkpoint(self) -> CheckpointBackend | None:
         if self.config.checkpoint_dir is None:
             return None
-        return FileCheckpointStore(self.config.checkpoint_dir)
+        return LocalCheckpoint(self.config.checkpoint_dir)
 
     def run(self, df: pd.DataFrame) -> tuple[pd.DataFrame | None, RunSummary]:
         """Process all entities in df and return combined output plus summary."""
@@ -59,8 +70,8 @@ class Flow:
             entities = entities[: self.config.max_entities]
 
         completed: set[EntityId] = set()
-        if self.config.resume and self.checkpoint_store is not None:
-            completed = self.checkpoint_store.load_completed_entities()
+        if self.config.resume and self.checkpoint is not None:
+            completed = self.checkpoint.load_completed()
             if completed:
                 logger.info("Resuming run; skipping %d completed entities", len(completed))
 
@@ -72,20 +83,18 @@ class Flow:
         if not self.config.track_memory:
             memory_tracker.disable()
 
-        results: list[EntityResult] = []
+        results: list[FlowEntityResult] = []
         output_frames: list[pd.DataFrame] = []
 
         progress.start(len(pending))
         try:
-            for entity_id, entity_df in split_by_entity(
+            for entity_id, entity_df in iter_entity_groups(
                 df,
                 self.config.entity_column,
                 sort_entities=self.config.sort_entities,
                 max_entities=self.config.max_entities,
+                skip=completed,
             ):
-                if entity_id in completed:
-                    continue
-
                 result = self._process_entity(entity_id, entity_df, memory_tracker)
                 results.append(result)
                 progress.advance(entity_id, success=result.success)
@@ -125,7 +134,7 @@ class Flow:
         entity_id: EntityId,
         entity_df: pd.DataFrame,
         memory_tracker: MemoryTracker,
-    ) -> EntityResult:
+    ) -> FlowEntityResult:
         memory_tracker.reset()
         memory_tracker.sample()
         start = time.perf_counter()
@@ -147,7 +156,7 @@ class Flow:
             output = self.config.retry_policy.run(_invoke, entity_id=entity_id)
             duration = time.perf_counter() - start
             memory_tracker.sample()
-            result = EntityResult(
+            result = FlowEntityResult(
                 entity_id=entity_id,
                 success=True,
                 dataframe=output,
@@ -165,7 +174,7 @@ class Flow:
                 logger.exception("Unexpected error processing entity %r", entity_id)
             else:
                 logger.warning("Entity %r failed after %d attempt(s): %s", entity_id, attempts, exc)
-            result = EntityResult(
+            result = FlowEntityResult(
                 entity_id=entity_id,
                 success=False,
                 error=last_error,
@@ -176,15 +185,23 @@ class Flow:
             self._checkpoint(result)
             return result
 
-    def _checkpoint(self, result: EntityResult) -> None:
-        if self.checkpoint_store is None:
+    def _checkpoint(self, result: FlowEntityResult) -> None:
+        if self.checkpoint is None:
             return
-        record = build_checkpoint_record(
-            entity_id=result.entity_id,
-            success=result.success,
+        if result.success:
+            self.checkpoint.mark_completed(
+                result.entity_id,
+                runtime_seconds=result.duration_seconds,
+                memory_delta_mb=result.peak_memory_mb,
+                attempts=result.attempts,
+                metadata=result.metadata,
+            )
+            return
+        self.checkpoint.mark_failed(
+            result.entity_id,
+            error=result.error,
+            runtime_seconds=result.duration_seconds,
+            memory_delta_mb=result.peak_memory_mb,
             attempts=result.attempts,
-            duration_seconds=result.duration_seconds,
-            peak_memory_mb=result.peak_memory_mb,
             metadata=result.metadata,
         )
-        self.checkpoint_store.save(record)

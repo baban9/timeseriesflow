@@ -58,6 +58,6 @@ By default, `TimeoutError`, `ConnectionError`, and `OSError` are retried.
 ## CLI
 
 ```bash
-timeseriesflow version
+tsflow --version
 timeseriesflow info --checkpoint-dir ./.timeseriesflow/checkpoints
 ```

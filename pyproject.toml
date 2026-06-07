@@ -42,16 +42,21 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+parquet = [
+    "pyarrow>=14",
+]
 dev = [
     "mypy>=1.8",
     "pandas-stubs>=2.0",
+    "pyarrow>=14",
     "pytest>=7.4",
     "pytest-cov>=4.1",
     "ruff>=0.3",
 ]
 
 [project.scripts]
-timeseriesflow = "timeseriesflow.cli.main:app"
+tsflow = "timeseriesflow.cli.main:main"
+timeseriesflow = "timeseriesflow.cli.main:main"
 
 [project.urls]
 Homepage = "https://github.com/baban9/timeseriesflow"
@@ -63,7 +68,7 @@ Issues = "https://github.com/baban9/timeseriesflow/issues"
 sources = ["src"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["timeseriesflow"]
+packages = ["timeseriesflow", "adaptiveforecast"]
 
 [tool.hatch.build.targets.sdist]
 include = [
@@ -100,7 +105,7 @@ select = [
 ignore = ["B008"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["timeseriesflow"]
+known-first-party = ["timeseriesflow", "adaptiveforecast"]
 
 [tool.mypy]
 python_version = "3.10"
@@ -109,14 +114,14 @@ warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
-packages = ["timeseriesflow"]
+packages = ["timeseriesflow", "adaptiveforecast"]
 
 [[tool.mypy.overrides]]
 module = "tests.*"
 disallow_untyped_defs = false
 
 [tool.coverage.run]
-source = ["timeseriesflow"]
+source = ["timeseriesflow", "adaptiveforecast"]
 branch = true
 
 [tool.coverage.report]

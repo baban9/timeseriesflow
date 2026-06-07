@@ -26,21 +26,50 @@ def list_entities(df: pd.DataFrame, entity_column: str, *, sort: bool = True) ->
     return entities
 
 
+def iter_entity_groups(
+    df: pd.DataFrame,
+    entity_column: str,
+    *,
+    sort_entities: bool = True,
+    max_entities: int | None = None,
+    skip: set[EntityId] | None = None,
+) -> Iterator[tuple[EntityId, pd.DataFrame]]:
+    """Yield (entity_id, entity_df) pairs using a single groupby pass.
+
+    More efficient than repeated boolean masks when processing many entities.
+    """
+    entities = list_entities(df, entity_column, sort=sort_entities)
+    if max_entities is not None:
+        entities = entities[:max_entities]
+
+    excluded = skip or set()
+    if not entities:
+        return
+
+    grouped = df.groupby(entity_column, sort=False)
+    for entity_id in entities:
+        if entity_id in excluded:
+            continue
+        entity_df = grouped.get_group(entity_id).copy()
+        yield entity_id, entity_df
+
+
 def split_by_entity(
     df: pd.DataFrame,
     entity_column: str,
     *,
     sort_entities: bool = True,
     max_entities: int | None = None,
+    skip: set[EntityId] | None = None,
 ) -> Iterator[tuple[EntityId, pd.DataFrame]]:
     """Yield (entity_id, entity_df) pairs from a multi-entity dataframe."""
-    entities = list_entities(df, entity_column, sort=sort_entities)
-    if max_entities is not None:
-        entities = entities[:max_entities]
-    for entity_id in entities:
-        mask = df[entity_column] == entity_id
-        entity_df = df.loc[mask].copy()
-        yield entity_id, entity_df
+    yield from iter_entity_groups(
+        df,
+        entity_column,
+        sort_entities=sort_entities,
+        max_entities=max_entities,
+        skip=skip,
+    )
 
 
 def apply_entity_limit(config: FlowConfig, entities: list[EntityId]) -> list[EntityId]:

@@ -27,3 +27,8 @@ def test_split_by_entity(sample_df: pd.DataFrame) -> None:
 def test_split_by_entity_max_limit(sample_df: pd.DataFrame) -> None:
     groups = list(split_by_entity(sample_df, "sensor_id", max_entities=2))
     assert len(groups) == 2
+
+
+def test_split_by_entity_skip(sample_df: pd.DataFrame) -> None:
+    groups = list(split_by_entity(sample_df, "sensor_id", skip={"S1", "S3"}))
+    assert [entity_id for entity_id, _ in groups] == ["S2"]
