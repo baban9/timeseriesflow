@@ -1,5 +1,9 @@
 # TimeSeriesFlow
 
+[![CI](https://github.com/baban9/timeseriesflow/actions/workflows/ci.yml/badge.svg)](https://github.com/baban9/timeseriesflow/actions/workflows/ci.yml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/baban9/timeseriesflow/blob/main/LICENSE)
+
 Entity-based time-series processing for Python, plus **AdaptiveForecast** for profile-driven model architecture selection. Write one function per entity; the framework handles grouping, retries, checkpointing, progress, memory tracking, and logging.
 
 ## Why TimeSeriesFlow
