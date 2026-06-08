@@ -3,67 +3,55 @@
 [![CI](https://github.com/baban9/timeseriesflow/actions/workflows/ci.yml/badge.svg)](https://github.com/baban9/timeseriesflow/actions/workflows/ci.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/baban9/timeseriesflow/blob/main/LICENSE)
+[![Release](https://img.shields.io/github/v/release/baban9/timeseriesflow?label=release)](https://github.com/baban9/timeseriesflow/releases)
 
-Entity-based time-series processing for Python, plus **AdaptiveForecast** for profile-driven model architecture selection. Write one function per entity; the framework handles grouping, retries, checkpointing, progress, memory tracking, and logging.
+Entity-based time-series processing for Python, plus **AdaptiveForecast** for profile-driven model architecture selection.
 
-## Why TimeSeriesFlow
+Write one function per entity (`sensor_id`, `device_id`, `customer_id`, ...). The framework handles grouping, retries, checkpointing, progress, memory tracking, and logging.
 
-Most time-series pipelines repeat the same boilerplate:
-
-- Split a large dataframe by entity (`sensor_id`, `device_id`, `customer_id`, ...)
-- Process each entity in isolation
-- Retry transient failures
-- Resume after crashes
-- Track progress and memory
-
-TimeSeriesFlow is a focused framework for that pattern. It is not an orchestration platform or general pandas utility package.
+| Package | Role |
+|---------|------|
+| **timeseriesflow** | Per-entity processing, `EntityRunner`, CLI (`tsflow`), checkpoints |
+| **adaptiveforecast** | Series profiling and forecasting architecture recommendations |
 
 ## What is AdaptiveForecast?
 
-AdaptiveForecast is a companion library (installed with `timeseriesflow`) that answers one question before you train anything:
+AdaptiveForecast answers one question before you train anything:
 
 **Given this time series, which forecasting approach is worth trying first?**
 
-It profiles a single numeric series (volatility, trend, seasonality, gaps, spikes, data quality) and returns ranked, human-readable model recommendations such as `moving_average`, `exponential_smoothing`, or `lstm`. Rules are deterministic, not LLM-based.
+It profiles volatility, trend, seasonality, gaps, spikes, and data quality, then returns ranked recommendations (`moving_average`, `exponential_smoothing`, `lstm`, ...). Rules are deterministic, not LLM-based.
 
-**Where it helps:**
+| Situation | How it helps |
+|-----------|--------------|
+| Many sensors or devices | Pick a model family per entity, not one global default |
+| Mixed data quality | `ValidationGate` flags series too short or noisy to forecast |
+| Team handoffs | `reason` fields explain each recommendation |
+| With TimeSeriesFlow | Profile inside `@entity_flow` ([combined workflow](docs/combined_workflow.md)) |
 
-| Situation | How AdaptiveForecast helps |
-|-----------|----------------------------|
-| Thousands of sensors or devices | Pick a model family per entity instead of one global default |
-| Mixed data quality | `ValidationGate` flags series that are too short or too noisy to forecast |
-| ML team handoffs | `reason` and `reasons` fields explain why a recipe was suggested |
-| Pipeline design | Decide baseline vs statistical vs deep learning before writing training code |
-| TimeSeriesFlow jobs | Run profiling inside `@entity_flow` (see [combined workflow](docs/combined_workflow.md)) |
-
-**What it does not do:** train models, produce forecasts, or emit PyTorch/sklearn code. It recommends architecture recipes only.
+It does **not** train models or produce forecasts. It recommends architecture recipes only.
 
 ## Install
 
+**v0.1.0** (from GitHub; PyPI publish planned for v0.2):
+
 ```bash
-pip install timeseriesflow
+pip install git+https://github.com/baban9/timeseriesflow.git@v0.1.0
 ```
 
 Development install:
 
 ```bash
+git clone https://github.com/baban9/timeseriesflow.git
+cd timeseriesflow
 pip install -e ".[dev]"
 ```
 
-## CLI
+Requires Python 3.10+.
 
-```bash
-tsflow run examples/basic_pipeline.py
-tsflow validate examples/basic_pipeline.py
-tsflow info
-tsflow checkpoint-status --checkpoint-dir ./checkpoints
-```
+## Quick start
 
-See [CLI documentation](docs/cli.md).
-
-## Quick start (golden path)
-
-Recommended API: `@entity_flow` for per-entity logic, `EntityRunner` for production runs.
+Recommended API: `@entity_flow` for logic, `EntityRunner` or `tsflow run` for production.
 
 ```python
 import pandas as pd
@@ -97,67 +85,16 @@ succeeded=2 failed=0
 [{'sensor_id': 'S1', 'rows': 3, 'mean_value': 2.0}, {'sensor_id': 'S2', 'rows': 3, 'mean_value': 11.0}]
 ```
 
-Production pipeline with CLI:
+### CLI
 
 ```bash
 tsflow run examples/basic_pipeline.py
+tsflow validate examples/basic_pipeline.py
+tsflow info
+tsflow checkpoint-status --checkpoint-dir ./checkpoints
 ```
 
-Combined profiling + entity processing:
-
-```bash
-python examples/advise_and_process.py
-```
-
-See [Golden path](docs/golden_path.md) and [Combined workflow](docs/combined_workflow.md).
-
-> **Legacy API:** `Flow` + `FlowConfig` still works for existing code. New projects should use `@entity_flow`. Deprecation warning planned for v0.2.
-
-## AdaptiveForecast quick start
-
-Profile one series and get ranked model recommendations:
-
-```python
-from datetime import datetime, timedelta, timezone
-
-import numpy as np
-import pandas as pd
-from adaptiveforecast import ProfileAnalyzer, ModelAdvisor, ValidationGate
-
-# Synthetic hourly series with trend + seasonality
-base = datetime(2024, 1, 1, tzinfo=timezone.utc)
-df = pd.DataFrame(
-    {
-        "timestamp": [base + timedelta(hours=i) for i in range(120)],
-        "value": [10.0 + 3.0 * np.sin(i / 12.0) + 0.01 * i for i in range(120)],
-    }
-)
-
-report = ProfileAnalyzer(time_column="timestamp", value_column="value").analyze(df)
-gate = ValidationGate(min_rows=30).validate(report)
-recommendation = ModelAdvisor(max_models=3).recommend(report)
-
-print(f"seasonality_strength={report.seasonality_strength:.2f}")
-print(f"gate_passed={gate.passed}")
-print(f"best_model={recommendation.best_model}")
-print(recommendation.to_dict())
-```
-
-**Expected output:**
-
-```
-seasonality_strength=0.82
-gate_passed=True
-best_model=moving_average
-{'recommended_models': ['moving_average', 'exponential_smoothing', 'gru'],
- 'reason': 'Low volatility and few spikes suit a smoothed baseline. Also consider: trend or seasonality present with moderate volatility.',
- 'reasons': {'moving_average': 'Low volatility and few spikes suit a smoothed baseline.',
-             'exponential_smoothing': 'Trend or seasonality present with moderate volatility.',
-             'gru': 'Medium-length series with patterns suitable for a lighter recurrent model.'},
- 'best_model': 'moving_average'}
-```
-
-For the full profile-to-selection workflow:
+### AdaptiveForecast
 
 ```python
 from adaptiveforecast import ProfileAwareArchitectureSelection
@@ -168,91 +105,39 @@ result = ProfileAwareArchitectureSelection(
     max_models=3,
 ).select(df)
 
-print(result.best_model)          # moving_average
-print(result.gate_passed)         # True
+print(result.best_model)
 print(result.recommendation.to_dict())
 ```
 
-Run the bundled examples:
+### Examples
 
 ```bash
-python examples/adaptiveforecast_profile.py
-python examples/architecture_selection.py
+python examples/advise_and_process.py          # TimeSeriesFlow + AdaptiveForecast
+python examples/adaptiveforecast_profile.py  # profiling only
+python examples/architecture_selection.py    # full selection workflow
 ```
 
-Supported recipes: `naive`, `moving_average`, `exponential_smoothing`, `lstm`, `gru`, `residual_lstm`, `cnn_lstm`.
-
-See [AdaptiveForecast docs](docs/adaptiveforecast.md) and [architecture selection](docs/architecture_selection.md).
-
-## Core concepts
-
-| Concept | Description |
-|---------|-------------|
-| Entity | A logical unit of time-series data (sensor, device, customer, etc.) |
-| `@entity_flow` | Decorator that defines per-entity processing logic |
-| `EntityRunner` | Production orchestrator: sources, retries, checkpoints, CLI |
-| `EntityContext` | Per-entity metadata: entity id, column names, logger |
-| `Flow` (legacy) | Older orchestrator; use `@entity_flow` for new code |
-
-### AdaptiveForecast concepts
-
-| Concept | Description |
-|---------|-------------|
-| ProfileAnalyzer | Computes volatility, trend, seasonality, and data quality metrics |
-| ProfileReport | Structured profile result for one series |
-| ModelAdvisor | Deterministic rules that map a profile to candidate models |
-| ValidationGate | Threshold checks before recommending architectures |
-| ProfileAwareArchitectureSelection | End-to-end workflow from dataframe to best model pick |
+> **Legacy API:** `Flow` + `FlowConfig` still works. New projects should use `@entity_flow`. Deprecation warning planned for v0.2.
 
 ## Features
 
-### TimeSeriesFlow
+**TimeSeriesFlow:** entity grouping, retries, JSONL checkpoints, Rich progress, memory tracking, `CSVSource` / `ParquetSource`, `tsflow` CLI.
 
-- **Entity grouping**: automatic split and combine by entity column
-- **Retries**: exponential backoff with configurable exception types
-- **Checkpointing**: file-based resume via `FileCheckpointStore`
-- **Progress**: Rich progress bar with per-entity status
-- **Memory tracking**: peak RSS per run via psutil
-- **Logging**: structured console logging
-- **CLI**: `tsflow --version`, `tsflow info`
-
-### AdaptiveForecast
-
-- **Series profiling**: volatility, trend, seasonality, outliers, spikes, sampling quality
-- **Architecture selection**: explainable, deterministic model recommendations
-- **Validation gate**: skip or flag series that fail minimum data checks
-- **Seven recipes**: from naive baselines to CNN-LSTM for volatile series
-
-## Project layout
-
-```
-time-series-flow/
-├── src/timeseriesflow/    # entity processing framework
-├── src/adaptiveforecast/  # profiling and architecture selection
-├── tests/                 # pytest suite
-├── examples/              # runnable examples
-├── docs/                  # architecture and API docs
-├── pyproject.toml
-├── README.md
-├── LICENSE
-└── CONTRIBUTING.md
-```
+**AdaptiveForecast:** series profiling, validation gate, seven recipes (`naive` through `cnn_lstm`), explainable `ModelAdvisor` rules.
 
 ## Documentation
 
-- [Golden path (recommended API)](docs/golden_path.md)
-- [Combined workflow (TS + AdaptiveForecast)](docs/combined_workflow.md)
-- [Getting started](docs/getting_started.md)
-- [Data sources](docs/sources.md)
-- [Checkpointing](docs/checkpointing.md)
-- [EntityRunner](docs/runner.md)
-- [Memory tracking](docs/memory.md)
-- [CLI (tsflow)](docs/cli.md)
-- [AdaptiveForecast](docs/adaptiveforecast.md)
-- [Profile-Aware Architecture Selection](docs/architecture_selection.md)
-- [Architecture](docs/architecture.md)
-- [Public API](docs/api.md)
-- [Implementation plan](docs/implementation_plan.md)
+| Topic | Link |
+|-------|------|
+| Golden path (recommended) | [docs/golden_path.md](docs/golden_path.md) |
+| Combined TS + AdaptiveForecast | [docs/combined_workflow.md](docs/combined_workflow.md) |
+| AdaptiveForecast intro | [docs/adaptiveforecast.md](docs/adaptiveforecast.md) |
+| Architecture selection | [docs/architecture_selection.md](docs/architecture_selection.md) |
+| Getting started | [docs/getting_started.md](docs/getting_started.md) |
+| EntityRunner | [docs/runner.md](docs/runner.md) |
+| CLI | [docs/cli.md](docs/cli.md) |
+| Public API | [docs/api.md](docs/api.md) |
+| Changelog | [CHANGELOG.md](CHANGELOG.md) |
 
 ## Development
 
@@ -262,10 +147,18 @@ ruff check src tests examples
 mypy src
 ```
 
+## Contributing
+
+`main` is protected. Open a pull request with review; do not push directly to `main`.
+
+```bash
+git checkout -b feat/my-change
+git push -u origin feat/my-change
+gh pr create --fill
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) and [branch protection guide](.github/BRANCH_PROTECTION.md).
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md).
