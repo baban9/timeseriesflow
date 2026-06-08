@@ -26,6 +26,19 @@ pytest
 - Keep changes focused; avoid scope creep
 - Add tests for new behavior
 
+## Branch policy
+
+`main` is protected. **Direct pushes and merges to `main` are not allowed.**
+
+All changes must go through a pull request with at least one approving review and passing CI. See [.github/BRANCH_PROTECTION.md](.github/BRANCH_PROTECTION.md).
+
+```bash
+git checkout -b feat/my-change
+# commit your work
+git push -u origin feat/my-change
+gh pr create --fill
+```
+
 ## Pull request process
 
 1. Open an issue for large changes before implementing.
@@ -33,6 +46,7 @@ pytest
 3. Ensure CI checks pass locally: `pytest`, `ruff check`, `mypy src`.
 4. Update docs when public API or behavior changes.
 5. Write a clear PR description with motivation and test plan.
+6. Wait for review and approval before merging.
 
 ## What belongs in TimeSeriesFlow
 
