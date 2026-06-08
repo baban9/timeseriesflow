@@ -14,7 +14,25 @@ Most time-series pipelines repeat the same boilerplate:
 
 TimeSeriesFlow is a focused framework for that pattern. It is not an orchestration platform or general pandas utility package.
 
-**AdaptiveForecast** ships in the same install. It profiles univariate series and recommends explainable forecasting architectures (baseline, statistical, and deep learning recipes). It does not train models or generate model code.
+## What is AdaptiveForecast?
+
+AdaptiveForecast is a companion library (installed with `timeseriesflow`) that answers one question before you train anything:
+
+**Given this time series, which forecasting approach is worth trying first?**
+
+It profiles a single numeric series (volatility, trend, seasonality, gaps, spikes, data quality) and returns ranked, human-readable model recommendations such as `moving_average`, `exponential_smoothing`, or `lstm`. Rules are deterministic, not LLM-based.
+
+**Where it helps:**
+
+| Situation | How AdaptiveForecast helps |
+|-----------|----------------------------|
+| Thousands of sensors or devices | Pick a model family per entity instead of one global default |
+| Mixed data quality | `ValidationGate` flags series that are too short or too noisy to forecast |
+| ML team handoffs | `reason` and `reasons` fields explain why a recipe was suggested |
+| Pipeline design | Decide baseline vs statistical vs deep learning before writing training code |
+| TimeSeriesFlow jobs | Run profiling inside `@entity_flow` (see [combined workflow](docs/combined_workflow.md)) |
+
+**What it does not do:** train models, produce forecasts, or emit PyTorch/sklearn code. It recommends architecture recipes only.
 
 ## Install
 
@@ -93,7 +111,7 @@ See [Golden path](docs/golden_path.md) and [Combined workflow](docs/combined_wor
 
 ## AdaptiveForecast quick start
 
-Profile a seasonal series and get ranked model recommendations:
+Profile one series and get ranked model recommendations:
 
 ```python
 from datetime import datetime, timedelta, timezone

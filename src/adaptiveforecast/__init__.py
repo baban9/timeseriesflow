@@ -1,4 +1,12 @@
-"""AdaptiveForecast: model-agnostic time-series profiling and architecture advice."""
+"""AdaptiveForecast: profile univariate series and recommend forecasting architectures.
+
+AdaptiveForecast analyzes one numeric time series at a time (volatility, trend,
+seasonality, data quality) and returns ranked, explainable model recommendations
+(naive through CNN-LSTM). It does not train models or produce forecasts.
+
+Typical uses: per-sensor model routing, pre-training screening, and combined
+runs with TimeSeriesFlow ``@entity_flow``. See docs/adaptiveforecast.md.
+"""
 
 from adaptiveforecast.advisor import ModelAdvisor
 from adaptiveforecast.analyzer import ProfileAnalyzer

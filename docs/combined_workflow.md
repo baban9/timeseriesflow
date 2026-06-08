@@ -1,8 +1,10 @@
 # Combined workflow: TimeSeriesFlow + AdaptiveForecast
 
-Use TimeSeriesFlow to iterate entities and AdaptiveForecast to profile each entity series and recommend a forecasting architecture.
+TimeSeriesFlow splits work by entity (`device_id`, `sensor_id`, etc.). AdaptiveForecast profiles each entity's series and recommends which forecasting architecture fits it best. Together they answer: **for every entity in my fleet, what model family should we train?**
 
-This does not train models. It returns explainable recommendations you can plug into your own training pipeline.
+This does not train models. It returns explainable recommendations you plug into your own training pipeline.
+
+New to AdaptiveForecast? Read [What is AdaptiveForecast?](adaptiveforecast.md#what-is-adaptiveforecast).
 
 ## Pattern
 
