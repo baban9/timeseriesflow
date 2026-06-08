@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, cast
 import pandas as pd
 
 from timeseriesflow.api.context import EntityContext
+from timeseriesflow.api.naming import resolve_entity_column_name
 from timeseriesflow.api.processor import EntityFlowProcessor, validate_entity_flow_processor
 from timeseriesflow.api.result import EntityFlowResult, EntityResult
 from timeseriesflow.api.validation import validate_required_columns
@@ -36,7 +37,8 @@ class EntityFlow:
         self,
         processor: EntityFlowProcessor,
         *,
-        entity_key: str,
+        entity_key: str | None = None,
+        entity_column: str | None = None,
         time_key: str,
         sort_entities: bool = True,
         checkpoint: CheckpointBackend | None = None,
@@ -44,12 +46,13 @@ class EntityFlow:
         resume: bool = True,
     ) -> None:
         validate_entity_flow_processor(processor)
-        if not entity_key:
-            raise ValueError("entity_key must be a non-empty string")
         if not time_key:
             raise ValueError("time_key must be a non-empty string")
         self.processor = processor
-        self.entity_key = entity_key
+        self.entity_key = resolve_entity_column_name(
+            entity_key=entity_key,
+            entity_column=entity_column,
+        )
         self.time_key = time_key
         self.sort_entities = sort_entities
         self.resume = resume

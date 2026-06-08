@@ -26,3 +26,8 @@ class EntityContext:
     time_key: str
     logger: logging.Logger
     metadata: dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def entity_column(self) -> str:
+        """Alias for entity_key (legacy Flow API naming)."""
+        return self.entity_key

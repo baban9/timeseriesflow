@@ -40,5 +40,20 @@ class FlowEntityResult:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     @property
+    def entity_key(self) -> str:
+        """Alias for entity_column (developer API naming)."""
+        return self.entity_column
+
+    @property
+    def runtime_seconds(self) -> float:
+        """Alias for duration_seconds (developer API naming)."""
+        return self.duration_seconds
+
+    @property
+    def memory_delta_mb(self) -> float:
+        """Alias for peak_memory_mb (developer API naming)."""
+        return self.peak_memory_mb
+
+    @property
     def failed(self) -> bool:
         return not self.success

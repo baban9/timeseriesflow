@@ -44,4 +44,5 @@ jobs:
         run: |
           python examples/architecture_selection.py
           python examples/adaptiveforecast_profile.py
+          python examples/advise_and_process.py
           python examples/basic_pipeline.py

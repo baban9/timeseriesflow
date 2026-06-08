@@ -30,6 +30,16 @@ class EntityResult:
     attempts: int = 1
 
     @property
+    def duration_seconds(self) -> float:
+        """Alias for runtime_seconds (legacy Flow API naming)."""
+        return self.runtime_seconds
+
+    @property
+    def peak_memory_mb(self) -> float:
+        """Alias for memory_delta_mb (legacy Flow API naming)."""
+        return self.memory_delta_mb
+
+    @property
     def failed(self) -> bool:
         """Return True when processing did not succeed."""
         return not self.success

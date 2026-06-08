@@ -39,54 +39,57 @@ tsflow checkpoint-status --checkpoint-dir ./checkpoints
 
 See [CLI documentation](docs/cli.md).
 
-## Quick start
+## Quick start (golden path)
 
-Run this as a script or in a notebook:
+Recommended API: `@entity_flow` for per-entity logic, `EntityRunner` for production runs.
 
 ```python
 import pandas as pd
-from timeseriesflow import Flow, FlowConfig, entity_processor
+from timeseriesflow import EntityContext, entity_flow
 
 df = pd.DataFrame(
     {
         "sensor_id": ["S1", "S1", "S1", "S2", "S2", "S2"],
+        "timestamp": pd.date_range("2024-01-01", periods=6, freq="h", tz="UTC"),
         "value": [1.0, 2.0, 3.0, 10.0, 11.0, 12.0],
     }
 )
 
-@entity_processor
-def process_entity(df: pd.DataFrame, context) -> pd.DataFrame:
-    out = df.copy()
-    out["rolling_mean"] = out["value"].rolling(2, min_periods=1).mean()
-    return out
+@entity_flow(entity_key="sensor_id", time_key="timestamp")
+def process_sensor(df: pd.DataFrame, ctx: EntityContext) -> dict[str, object]:
+    return {
+        "sensor_id": ctx.entity_id,
+        "rows": len(df),
+        "mean_value": float(df["value"].mean()),
+    }
 
-config = FlowConfig(entity_column="sensor_id", show_progress=False)
-flow = Flow(process_entity, config)
-output, summary = flow.run(df)
-
-print(f"succeeded={summary.succeeded} failed={summary.failed}")
-print(output)
+result = process_sensor.run(df)
+print(f"succeeded={result.succeeded} failed={result.failed}")
+print(result.outputs)
 ```
 
 **Expected output:**
 
 ```
 succeeded=2 failed=0
-  sensor_id  value  rolling_mean
-0        S1    1.0           1.0
-1        S1    2.0           1.5
-2        S1    3.0           2.5
-3        S2   10.0          10.0
-4        S2   11.0          10.5
-5        S2   12.0          11.5
+[{'sensor_id': 'S1', 'rows': 3, 'mean_value': 2.0}, {'sensor_id': 'S2', 'rows': 3, 'mean_value': 11.0}]
 ```
 
-Or run the full pipeline example:
+Production pipeline with CLI:
 
 ```bash
-python examples/basic_pipeline.py
-# Processed 3 devices, skipped 0
+tsflow run examples/basic_pipeline.py
 ```
+
+Combined profiling + entity processing:
+
+```bash
+python examples/advise_and_process.py
+```
+
+See [Golden path](docs/golden_path.md) and [Combined workflow](docs/combined_workflow.md).
+
+> **Legacy API:** `Flow` + `FlowConfig` still works for existing code. New projects should use `@entity_flow`. Deprecation warning planned for v0.2.
 
 ## AdaptiveForecast quick start
 
@@ -164,10 +167,10 @@ See [AdaptiveForecast docs](docs/adaptiveforecast.md) and [architecture selectio
 | Concept | Description |
 |---------|-------------|
 | Entity | A logical unit of time-series data (sensor, device, customer, etc.) |
-| EntityProcessor | Your function: `(entity_df, context) -> entity_df` |
-| Flow | Orchestrator that groups, runs, retries, and aggregates results |
-| FlowConfig | Run settings: entity column, checkpoint dir, retry policy, etc. |
-| RunContext | Per-entity metadata: entity id, attempt number, timestamps |
+| `@entity_flow` | Decorator that defines per-entity processing logic |
+| `EntityRunner` | Production orchestrator: sources, retries, checkpoints, CLI |
+| `EntityContext` | Per-entity metadata: entity id, column names, logger |
+| `Flow` (legacy) | Older orchestrator; use `@entity_flow` for new code |
 
 ### AdaptiveForecast concepts
 
@@ -215,6 +218,8 @@ time-series-flow/
 
 ## Documentation
 
+- [Golden path (recommended API)](docs/golden_path.md)
+- [Combined workflow (TS + AdaptiveForecast)](docs/combined_workflow.md)
 - [Getting started](docs/getting_started.md)
 - [Data sources](docs/sources.md)
 - [Checkpointing](docs/checkpointing.md)

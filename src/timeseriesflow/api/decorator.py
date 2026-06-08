@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, TypeVar, cast
 import pandas as pd
 
 from timeseriesflow.api.flow import EntityFlow
+from timeseriesflow.api.naming import resolve_entity_column_name
 from timeseriesflow.api.processor import EntityFlowCallable, EntityFlowProcessor
 from timeseriesflow.api.result import EntityFlowResult
 
@@ -38,6 +39,11 @@ class EntityFlowFunction:
         return self._flow.entity_key
 
     @property
+    def entity_column(self) -> str:
+        """Alias for entity_key (legacy Flow API naming)."""
+        return self._flow.entity_key
+
+    @property
     def time_key(self) -> str:
         """Time column configured on this flow."""
         return self._flow.time_key
@@ -58,7 +64,8 @@ class EntityFlowFunction:
 
 def entity_flow(
     *,
-    entity_key: str,
+    entity_key: str | None = None,
+    entity_column: str | None = None,
     time_key: str,
     sort_entities: bool = True,
     checkpoint: CheckpointBackend | None = None,
@@ -67,6 +74,8 @@ def entity_flow(
 ) -> Callable[[F], EntityFlowFunction]:
     """Decorate a function as an entity flow processor.
 
+    Use ``entity_key`` or ``entity_column`` (same meaning).
+
     Example:
         @entity_flow(entity_key="device_id", time_key="timestamp")
         def process_device(df, ctx):
@@ -74,11 +83,15 @@ def entity_flow(
 
         results = process_device.run(multi_entity_df)
     """
+    resolved_entity_key = resolve_entity_column_name(
+        entity_key=entity_key,
+        entity_column=entity_column,
+    )
 
     def decorator(func: F) -> EntityFlowFunction:
         flow = EntityFlow(
             cast(EntityFlowProcessor, func),
-            entity_key=entity_key,
+            entity_key=resolved_entity_key,
             time_key=time_key,
             sort_entities=sort_entities,
             checkpoint=checkpoint,

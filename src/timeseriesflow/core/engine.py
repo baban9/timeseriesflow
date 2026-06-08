@@ -24,7 +24,12 @@ logger = get_logger("engine")
 
 
 class Flow:
-    """Orchestrates entity-based time-series processing."""
+    """Orchestrates entity-based time-series processing.
+
+    .. note::
+        Legacy API. Prefer ``@entity_flow`` with ``EntityRunner`` for new
+        projects. ``Flow`` will emit a deprecation warning starting in v0.2.
+    """
 
     def __init__(
         self,
