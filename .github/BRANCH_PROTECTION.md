@@ -2,11 +2,61 @@
 
 Direct pushes and merges to `main` are restricted. All changes must go through a pull request with your review.
 
-## Required settings
+## Fix: "This ruleset does not target any resources"
+
+This warning means the ruleset has **no branch target**. GitHub will not apply it until you add one.
+
+### In the rulesets UI
+
+1. Open https://github.com/baban9/timeseriesflow/settings/rules
+2. Edit your ruleset (or create **New branch ruleset**)
+3. Find **Target branches** (or **Ruleset targets** / **Branch targeting**)
+4. Click **Add target** or **Add inclusion**
+5. Choose one of:
+   - **Include default branch**, or
+   - **Include by ref name** and enter `main` (full form: `refs/heads/main`)
+6. Confirm the warning **"does not target any resources"** is gone
+7. Set **Enforcement status** to **Active** (not "Disabled" or evaluate-only)
+8. Under **Rules**, enable:
+   - **Require a pull request before merging** (1 approval)
+   - **Require status checks to pass**: `test (3.10)`, `test (3.11)`, `test (3.12)`
+   - **Block force pushes**
+9. Click **Create** or **Save changes**
+
+### Common mistakes
+
+| Mistake | Fix |
+|---------|-----|
+| Rules defined but no branch target | Add `main` under Target branches |
+| Enforcement disabled | Set to **Active** |
+| Wrong branch pattern | Use `main` or `refs/heads/main`, not empty string |
+| Saved ruleset without clicking Add | Target must appear in the inclusion list |
+
+## Apply via script (recommended)
+
+```bash
+gh auth login
+cd /path/to/timeseriesflow
+./.github/scripts/enable_branch_protection.sh main
+```
+
+The script creates a ruleset with `refs/heads/main` in `conditions.ref_name.include`.
+
+## Classic branch protection (alternative)
+
+If rulesets are confusing, use the older UI:
+
+1. https://github.com/baban9/timeseriesflow/settings/branches
+2. **Add branch protection rule**
+3. Branch name pattern: `main`
+4. Enable PR reviews (1) and required status checks
+
+## Required rules summary
 
 | Rule | Value |
 |------|-------|
-| Require pull request before merging | Yes |
+| Target branch | `refs/heads/main` |
+| Require pull request | Yes |
 | Required approving reviews | 1 |
 | Dismiss stale reviews on new pushes | Yes |
 | Require conversation resolution | Yes |
@@ -14,28 +64,6 @@ Direct pushes and merges to `main` are restricted. All changes must go through a
 | Require branches up to date | Yes |
 | Allow force pushes | No |
 | Allow deletions | No |
-
-## Apply via script (repo admin)
-
-```bash
-brew install gh   # if needed
-gh auth login
-./.github/scripts/enable_branch_protection.sh main
-```
-
-## Apply via GitHub UI
-
-1. Open https://github.com/baban9/timeseriesflow/settings/rules
-2. Click **New branch ruleset** (or edit existing ruleset for `main`)
-3. Target branch: `main`
-4. Enable:
-   - **Require a pull request before merging**
-   - **Required approvals**: 1
-   - **Require status checks to pass** (select all `test` jobs from CI)
-   - **Block force pushes**
-5. Save
-
-Classic UI path: **Settings > Branches > Add branch protection rule** for `main`.
 
 ## Workflow after protection is enabled
 
