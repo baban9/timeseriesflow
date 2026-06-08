@@ -25,6 +25,11 @@ class RunContext:
         """Return seconds elapsed since this entity run started."""
         return (datetime.now(timezone.utc) - self.started_at).total_seconds()
 
+    @property
+    def entity_key(self) -> str:
+        """Alias for entity_column (developer API naming)."""
+        return self.entity_column
+
 
 @dataclass(slots=True)
 class FlowEntityResult:
@@ -38,11 +43,6 @@ class FlowEntityResult:
     duration_seconds: float = 0.0
     peak_memory_mb: float = 0.0
     metadata: dict[str, Any] = field(default_factory=dict)
-
-    @property
-    def entity_key(self) -> str:
-        """Alias for entity_column (developer API naming)."""
-        return self.entity_column
 
     @property
     def runtime_seconds(self) -> float:

@@ -220,7 +220,7 @@ class ProfileAnalyzer:
         deltas = valid.sort_values().diff().dropna()
         if deltas.empty:
             return 0.0
-        seconds = deltas.dt.total_seconds().astype(float)
+        seconds = pd.to_timedelta(deltas).dt.total_seconds().astype(float)
         median = float(seconds.median())
         if median <= 0.0:
             return 1.0

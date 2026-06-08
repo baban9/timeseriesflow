@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 import pandas as pd
 
@@ -61,7 +61,8 @@ class BaseSource(ABC):
     def _get_cached_or_load(self) -> pd.DataFrame:
         """Return cached data or invoke ``load``."""
         if self._cached_frame is not None:
-            return cast(pd.DataFrame, self._cached_frame.copy(deep=True))
+            cached: pd.DataFrame = self._cached_frame.copy(deep=True)
+            return cached
         return self.load()
 
     def _validate_schema_columns(self, columns: Sequence[str]) -> None:
@@ -89,7 +90,8 @@ class TabularSource(BaseSource):
     def load(self) -> pd.DataFrame:
         """Load, validate schema, cache, and return the dataframe."""
         if self._cached_frame is not None:
-            return cast(pd.DataFrame, self._cached_frame.copy(deep=True))
+            cached: pd.DataFrame = self._cached_frame.copy(deep=True)
+            return cached
         try:
             df = self._read_dataframe()
         except SourceNotFoundError:
