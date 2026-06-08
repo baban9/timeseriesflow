@@ -126,7 +126,8 @@ def test_model_advisor_recommends_seasonal_recipes() -> None:
     report = ProfileAnalyzer(time_column="timestamp", value_column="value").analyze(df)
     recommendation = ModelAdvisor().recommend(report)
     assert recommendation.recommended_models
-    assert "exponential_smoothing" in recommendation.recommended_models or "lstm" in recommendation.recommended_models
+    models = recommendation.recommended_models
+    assert "exponential_smoothing" in models or "lstm" in models
 
 
 def test_model_advisor_recipes_are_metadata_only() -> None:

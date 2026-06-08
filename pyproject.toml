@@ -52,6 +52,7 @@ dev = [
     "pytest>=7.4",
     "pytest-cov>=4.1",
     "ruff>=0.3",
+    "types-psutil>=5.9",
 ]
 
 [project.scripts]
@@ -66,9 +67,6 @@ Issues = "https://github.com/baban9/timeseriesflow/issues"
 
 [tool.hatch.build]
 sources = ["src"]
-
-[tool.hatch.build.targets.wheel]
-packages = ["timeseriesflow", "adaptiveforecast"]
 
 [tool.hatch.build.targets.sdist]
 include = [
@@ -99,7 +97,6 @@ select = [
     "UP",
     "B",
     "SIM",
-    "TCH",
     "RUF",
 ]
 ignore = ["B008"]

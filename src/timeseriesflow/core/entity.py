@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import pandas as pd
 
@@ -23,7 +23,7 @@ def list_entities(df: pd.DataFrame, entity_column: str, *, sort: bool = True) ->
             entities = sorted(entities, key=lambda value: (type(value).__name__, value))
         except TypeError:
             entities = sorted(entities, key=str)
-    return entities
+    return cast(list[EntityId], entities)
 
 
 def iter_entity_groups(

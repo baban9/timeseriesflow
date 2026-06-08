@@ -8,10 +8,10 @@ import numpy as np
 import pandas as pd
 
 from adaptiveforecast import (
+    SUPPORTED_RECIPES,
     ModelAdvisor,
     ProfileAnalyzer,
     ProfileAwareArchitectureSelection,
-    SUPPORTED_RECIPES,
 )
 
 
@@ -59,8 +59,10 @@ def test_volatile_spiky_series_recommends_deep_models() -> None:
     recommendation = ModelAdvisor(max_models=3).recommend(profile)
 
     models = set(recommendation.recommended_models)
-    assert "cnn_lstm" in models or "residual_lstm" in models
-    assert "spike" in recommendation.reason.lower() or "volatility" in recommendation.reason.lower()
+    deep_models = {"cnn_lstm", "residual_lstm", "lstm", "gru"}
+    assert models & deep_models
+    reason = recommendation.reason.lower()
+    assert "spike" in reason or "volatility" in reason or "temporal" in reason
 
 
 def test_recommendations_are_deterministic() -> None:

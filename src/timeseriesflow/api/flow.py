@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import pandas as pd
 
@@ -176,4 +176,7 @@ class EntityFlow:
         return self._sort_entity_frame(entity_df)
 
     def _sort_entity_frame(self, entity_df: pd.DataFrame) -> pd.DataFrame:
-        return entity_df.sort_values(self.time_key).reset_index(drop=True)
+        return cast(
+            pd.DataFrame,
+            entity_df.sort_values(self.time_key).reset_index(drop=True),
+        )

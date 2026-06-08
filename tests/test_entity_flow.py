@@ -94,7 +94,10 @@ def test_entity_flow_failure_is_collected(sample_df: pd.DataFrame) -> None:
     assert isinstance(failed.error, ValueError)
 
 
-def test_entity_context_exposes_logger(sample_df: pd.DataFrame, caplog: pytest.LogCaptureFixture) -> None:
+def test_entity_context_exposes_logger(
+    sample_df: pd.DataFrame,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     @entity_flow(entity_key="sensor_id", time_key="timestamp")
     def log_entity(df: pd.DataFrame, ctx: EntityContext) -> None:
         assert ctx.entity_key == "sensor_id"

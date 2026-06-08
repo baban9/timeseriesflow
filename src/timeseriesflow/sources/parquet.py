@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from pathlib import Path
+from typing import cast
 
 import pandas as pd
 
@@ -19,7 +20,7 @@ def _parquet_engine_available() -> bool:
         return True
     except ImportError:
         try:
-            import fastparquet  # noqa: F401
+            import fastparquet  # type: ignore[import-not-found]  # noqa: F401
 
             return True
         except ImportError:
@@ -31,7 +32,7 @@ def _read_parquet_column_names(path: Path) -> list[str]:
     try:
         import pyarrow.parquet as pq
 
-        return pq.read_schema(path).names
+        return cast(list[str], pq.read_schema(path).names)  # type: ignore[no-untyped-call]
     except ImportError:
         pass
     except Exception:

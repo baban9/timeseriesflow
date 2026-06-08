@@ -37,22 +37,23 @@ def iter_jsonl_entries(path: Path) -> Iterator[dict[str, Any]]:
     if not path.exists():
         return
 
-    last_nonempty_line = 0
     try:
         with path.open("r", encoding="utf-8") as handle:
             for line_number, raw_line in enumerate(handle, start=1):
                 line = raw_line.strip()
                 if not line:
                     continue
-                last_nonempty_line = line_number
                 try:
                     data = json.loads(line)
                 except json.JSONDecodeError as exc:
-                    if line_number == last_nonempty_line:
-                        continue
-                    raise CheckpointError(
-                        f"corrupt checkpoint entry at {path}:{line_number}"
-                    ) from exc
+                    has_following = any(
+                        remaining.strip() for remaining in handle
+                    )
+                    if has_following:
+                        raise CheckpointError(
+                            f"corrupt checkpoint entry at {path}:{line_number}"
+                        ) from exc
+                    continue
                 if not isinstance(data, dict):
                     raise CheckpointError(
                         f"checkpoint entry at {path}:{line_number} must be a JSON object"

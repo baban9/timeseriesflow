@@ -105,8 +105,9 @@ class ProfileAnalyzer:
     ) -> tuple[pd.Series, pd.Series | None]:
         if isinstance(data, pd.Series):
             series = data.copy()
-            timestamps = series.index.to_series() if isinstance(series.index, pd.DatetimeIndex) else None
-            return series, timestamps
+            is_datetime_index = isinstance(series.index, pd.DatetimeIndex)
+            series_timestamps = series.index.to_series() if is_datetime_index else None
+            return series, series_timestamps
 
         if self.value_column not in data.columns:
             raise ProfileAnalysisError(

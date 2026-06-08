@@ -8,7 +8,6 @@ from collections.abc import Callable
 from typing import Any, TypeVar
 
 from timeseriesflow.logging import get_logger
-from timeseriesflow.memory.metrics import MemoryMetrics
 from timeseriesflow.memory.tracker import MemoryTracker
 
 F = TypeVar("F", bound=Callable[..., Any])

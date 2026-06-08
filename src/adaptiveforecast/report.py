@@ -47,4 +47,4 @@ class ProfileReport:
     @property
     def effective_row_count(self) -> int:
         """Rows excluding missing values."""
-        return max(0, int(round(self.row_count * (1.0 - self.missing_rate))))
+        return max(0, round(self.row_count * (1.0 - self.missing_rate)))

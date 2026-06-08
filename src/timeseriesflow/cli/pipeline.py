@@ -5,7 +5,6 @@ from __future__ import annotations
 import ast
 import importlib.util
 import sys
-from collections.abc import Callable
 from pathlib import Path
 from types import ModuleType
 from typing import Any

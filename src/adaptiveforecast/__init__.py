@@ -15,6 +15,7 @@ from adaptiveforecast.selection import ArchitectureRecommendation, ArchitectureS
 from adaptiveforecast.selection_workflow import ProfileAwareArchitectureSelection
 
 __all__ = [
+    "SUPPORTED_RECIPES",
     "AdaptiveForecastError",
     "ArchitectureRecommendation",
     "ArchitectureSelectionResult",
@@ -26,7 +27,6 @@ __all__ = [
     "ProfileAnalyzer",
     "ProfileAwareArchitectureSelection",
     "ProfileReport",
-    "SUPPORTED_RECIPES",
     "ValidationGate",
     "ValidationGateError",
 ]

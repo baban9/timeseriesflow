@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -10,6 +11,19 @@ import pytest
 
 from timeseriesflow.config import FlowConfig
 from timeseriesflow.sources.schema import SourceSchema
+
+
+@pytest.fixture(autouse=True)
+def _reset_timeseriesflow_logging() -> None:
+    """Keep package logging from conflicting with pytest caplog."""
+    package_logger = logging.getLogger("timeseriesflow")
+    previous_handlers = package_logger.handlers[:]
+    previous_propagate = package_logger.propagate
+    package_logger.handlers.clear()
+    package_logger.propagate = True
+    yield
+    package_logger.handlers[:] = previous_handlers
+    package_logger.propagate = previous_propagate
 
 
 @pytest.fixture

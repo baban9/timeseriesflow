@@ -6,7 +6,14 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from rich.console import Console
-from rich.progress import BarColumn, Progress, TaskProgressColumn, TextColumn, TimeElapsedColumn
+from rich.progress import (
+    BarColumn,
+    Progress,
+    TaskID,
+    TaskProgressColumn,
+    TextColumn,
+    TimeElapsedColumn,
+)
 
 from timeseriesflow.types import EntityId, FlowEntityResult
 
@@ -45,7 +52,7 @@ class ProgressTracker:
         self.enabled = enabled
         self.console = console or Console()
         self._progress: Progress | None = None
-        self._task_id: int | None = None
+        self._task_id: TaskID | None = None
 
     def start(self, total: int, description: str = "Processing entities") -> None:
         if not self.enabled:
@@ -93,7 +100,7 @@ class ProgressTracker:
 def build_summary(
     *,
     total_entities: int,
-    results: Sequence["FlowEntityResult | EntityResult"],
+    results: Sequence[FlowEntityResult | EntityResult],
     skipped: int,
     total_duration_seconds: float,
     peak_memory_mb: float,

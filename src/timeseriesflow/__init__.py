@@ -3,8 +3,8 @@
 from timeseriesflow.api import (
     EntityContext,
     EntityFlow,
-    EntityFlowResult,
     EntityFlowFunction,
+    EntityFlowResult,
     EntityResult,
     entity_flow,
 )
@@ -30,7 +30,7 @@ from timeseriesflow.exceptions import (
     SourceNotFoundError,
     SourceSchemaError,
 )
-from timeseriesflow.memory import MemoryMetrics, MemoryTracker, MemorySnapshot, track_memory
+from timeseriesflow.memory import MemoryMetrics, MemorySnapshot, MemoryTracker, track_memory
 from timeseriesflow.progress import ProgressTracker, RunSummary
 from timeseriesflow.retry import RetryPolicy
 from timeseriesflow.runner import EntityRunner
@@ -46,13 +46,13 @@ from timeseriesflow.types import EntityId, FlowEntityResult, RunContext
 
 __all__ = [
     "BaseSource",
+    "CSVSource",
     "CheckpointBackend",
     "CheckpointEntry",
     "CheckpointError",
     "CheckpointStore",
     "CheckpointSummary",
     "ColumnValidationError",
-    "CSVSource",
     "EntityContext",
     "EntityFlow",
     "EntityFlowFunction",

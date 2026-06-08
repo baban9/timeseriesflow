@@ -8,7 +8,11 @@ import typer
 
 from timeseriesflow.cli.console import console, print_error, print_info, print_panel, print_success
 from timeseriesflow.cli.errors import CliError
-from timeseriesflow.cli.pipeline import execute_pipeline, load_pipeline_module, resolve_pipeline_path
+from timeseriesflow.cli.pipeline import (
+    execute_pipeline,
+    load_pipeline_module,
+    resolve_pipeline_path,
+)
 from timeseriesflow.logging import setup_logging
 from timeseriesflow.progress import RunSummary
 
@@ -33,7 +37,7 @@ def run_command(
 
         tsflow run examples/basic_pipeline.py
     """
-    setup_logging("DEBUG" if verbose else "INFO")  # type: ignore[arg-type]
+    setup_logging("DEBUG" if verbose else "INFO")
 
     try:
         path = resolve_pipeline_path(pipeline)

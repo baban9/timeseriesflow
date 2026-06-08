@@ -53,9 +53,8 @@ def test_memory_tracker_peak_sampling() -> None:
 
 def test_memory_tracker_warning_threshold(caplog: pytest.LogCaptureFixture) -> None:
     tracker = MemoryTracker(warning_threshold_mb=0.0)
-    with caplog.at_level(logging.WARNING, logger="timeseriesflow.memory"):
-        with tracker.measure():
-            _ = bytearray(1024 * 1024)
+    with caplog.at_level(logging.WARNING, logger="timeseriesflow.memory"), tracker.measure():
+        _ = bytearray(1024 * 1024)
     assert any("exceeded threshold" in record.message for record in caplog.records)
 
 

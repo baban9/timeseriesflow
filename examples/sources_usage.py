@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from timeseriesflow import entity_flow, EntityContext
+from timeseriesflow import EntityContext, entity_flow
 from timeseriesflow.sources import CSVSource, ParquetSource, SourceSchema
 
 

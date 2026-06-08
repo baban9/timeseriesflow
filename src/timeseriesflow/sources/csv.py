@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from pathlib import Path
+from typing import cast
 
 import pandas as pd
 
@@ -68,7 +69,10 @@ class CSVSource(FileSource):
     def _read_dataframe(self) -> pd.DataFrame:
         self._ensure_file_exists()
         try:
-            return pd.read_csv(self.path, **self._read_kwargs())
+            return cast(
+                pd.DataFrame,
+                pd.read_csv(self.path, **self._read_kwargs()),  # type: ignore[call-overload]
+            )
         except Exception as exc:
             raise SourceLoadError(
                 self.source_name,

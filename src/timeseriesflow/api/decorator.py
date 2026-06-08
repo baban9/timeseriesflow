@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any, TypeVar, cast
 import pandas as pd
 
 from timeseriesflow.api.flow import EntityFlow
-from timeseriesflow.api.processor import EntityFlowCallable
+from timeseriesflow.api.processor import EntityFlowCallable, EntityFlowProcessor
 from timeseriesflow.api.result import EntityFlowResult
 
 if TYPE_CHECKING:
@@ -22,12 +22,10 @@ F = TypeVar("F", bound=EntityFlowCallable)
 class EntityFlowFunction:
     """Callable wrapper that exposes EntityFlow.run on a decorated function."""
 
-    __slots__ = ("_flow", "_func")
-
     def __init__(self, func: EntityFlowCallable, flow: EntityFlow) -> None:
-        functools.update_wrapper(self, func)
         self._func = func
         self._flow = flow
+        functools.update_wrapper(self, func)
 
     @property
     def flow(self) -> EntityFlow:
@@ -79,7 +77,7 @@ def entity_flow(
 
     def decorator(func: F) -> EntityFlowFunction:
         flow = EntityFlow(
-            func,
+            cast(EntityFlowProcessor, func),
             entity_key=entity_key,
             time_key=time_key,
             sort_entities=sort_entities,

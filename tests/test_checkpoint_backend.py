@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from timeseriesflow.checkpoint import LocalCheckpoint
-from timeseriesflow.checkpoint.io import append_jsonl_line, iter_jsonl_entries
+from timeseriesflow.checkpoint.io import append_jsonl_line
 from timeseriesflow.checkpoint.models import CheckpointStatus
 from timeseriesflow.exceptions import CheckpointError
 

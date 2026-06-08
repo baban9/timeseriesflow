@@ -29,7 +29,7 @@ app.command(
 )(checkpoint_status_command)
 
 
-@app.callback()
+@app.callback(invoke_without_command=True)
 def main_callback(
     version: bool = typer.Option(
         False,

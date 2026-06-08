@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Hashable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Hashable, TypeAlias
+from typing import Any, TypeAlias
 
 import pandas as pd
 

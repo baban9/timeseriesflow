@@ -9,7 +9,6 @@ import typer
 from timeseriesflow.cli.console import print_error, print_info, print_success
 from timeseriesflow.cli.errors import CliError
 from timeseriesflow.cli.pipeline import (
-    find_entry_point,
     load_pipeline_module,
     resolve_pipeline_path,
     validate_pipeline_module,
