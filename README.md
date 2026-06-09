@@ -146,6 +146,7 @@ python examples/architecture_selection.py    # full selection workflow
 | CLI | [docs/cli.md](docs/cli.md) |
 | Public API | [docs/api.md](docs/api.md) |
 | Changelog | [CHANGELOG.md](CHANGELOG.md) |
+| Publishing releases | [docs/publishing.md](docs/publishing.md) |
 
 ## Development
 

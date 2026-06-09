@@ -28,6 +28,16 @@ gh release create v0.2.0 --title "TimeSeriesFlow v0.2.0" --notes-file .github/RE
 3. In GitHub repo **Settings > Environments**, create environment `pypi` (no secrets required for trusted publishing).
 4. Push a version tag (`v0.2.0`). The [Publish workflow](../.github/workflows/publish.yml) runs on tag push.
 
+If publish fails before trusted publishing is configured, complete steps 1 to 3, then re-run **Actions > Publish > Run workflow** with tag `v0.2.0`.
+
+### Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| `Publish to PyPI` step fails | Add trusted publisher on PyPI and create GitHub environment `pypi` |
+| Project name not on PyPI | First successful publish claims `timeseriesflow` |
+| Tag exists but no GitHub Release | Run `./.github/scripts/create_release.sh v0.2.0` or create release in GitHub UI |
+
 Verify:
 
 ```bash
