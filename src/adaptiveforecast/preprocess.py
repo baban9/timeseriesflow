@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, cast
 
 import pandas as pd
+from pandas.tseries.offsets import BaseOffset
 
 AggMethod = Literal["mean", "last", "sum"]
 
@@ -44,7 +45,10 @@ def infer_median_freq(timestamps: pd.Series) -> str | None:
     median_delta = pd.Timedelta(deltas.median())
     if pd.isna(median_delta) or median_delta <= pd.Timedelta(0):
         return None
-    offset = pd.tseries.frequencies.to_offset(median_delta)
+    # Pandas accepts Timedelta at runtime; stubs on 3.10 only list str | BaseOffset.
+    offset = pd.tseries.frequencies.to_offset(
+        cast("str | BaseOffset", median_delta),
+    )
     return str(offset.freqstr)
 
 
