@@ -39,8 +39,8 @@ Goal: Production readiness for early adopters.
 | `Flow` deprecation warning | Done |
 | Sparse example in CI smoke tests | Done |
 | PyPI publish workflow (tag-triggered) | Done |
-| GitHub Release tag `v0.2.0` | Pending |
-| PyPI first publish (configure `pypi` environment + trusted publishing) | Pending |
+| GitHub Release tag `v0.2.0` | In progress |
+| PyPI first publish (see [publishing.md](publishing.md)) | In progress |
 | Parallel entity execution (configurable workers) | Planned |
 | Per-entity timeout support | Planned |
 | Result validation hooks (schema checks on processor output) | Planned |
