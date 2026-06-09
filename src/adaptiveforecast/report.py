@@ -23,6 +23,11 @@ class ProfileReport:
     spike_ratio: float
     flatline_ratio: float
     sampling_irregularity: float
+    coverage_ratio: float = 1.0
+    max_gap_seconds: float = 0.0
+    observation_density: float = 0.0
+    span_days: float = 0.0
+    expected_freq: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -37,6 +42,11 @@ class ProfileReport:
             "spike_ratio": self.spike_ratio,
             "flatline_ratio": self.flatline_ratio,
             "sampling_irregularity": self.sampling_irregularity,
+            "coverage_ratio": self.coverage_ratio,
+            "max_gap_seconds": self.max_gap_seconds,
+            "observation_density": self.observation_density,
+            "span_days": self.span_days,
+            "expected_freq": self.expected_freq,
             "metadata": dict(self.metadata),
         }
 

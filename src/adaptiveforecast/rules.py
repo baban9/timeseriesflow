@@ -23,6 +23,38 @@ def evaluate_rules(report: ProfileReport) -> list[RuleMatch]:
     """Evaluate all supported architecture rules deterministically."""
     matches: list[RuleMatch] = []
 
+    if report.coverage_ratio < 0.30 and report.effective_row_count < 50:
+        matches.append(
+            RuleMatch(
+                model="insufficient_data",
+                priority=1,
+                reason=(
+                    "Coverage and history are too low for reliable architecture selection; "
+                    "collect more readings or widen the calendar window."
+                ),
+                family="gate",
+                parameters={
+                    "coverage_ratio": round(report.coverage_ratio, 3),
+                    "effective_row_count": report.effective_row_count,
+                },
+            )
+        )
+        return _dedupe_by_model(matches)
+
+    if report.coverage_ratio < 0.60 and report.sampling_irregularity >= 0.35:
+        matches.append(
+            RuleMatch(
+                model="naive",
+                priority=8,
+                reason="Sparse irregular series; last-value baseline is the safest default.",
+                family="baseline",
+                parameters={
+                    "strategy": "last_value",
+                    "coverage_ratio": round(report.coverage_ratio, 3),
+                },
+            )
+        )
+
     if (
         report.trend_strength < 0.25
         and report.seasonality_strength < 0.25
@@ -69,6 +101,7 @@ def evaluate_rules(report: ProfileReport) -> list[RuleMatch]:
 
     if (
         report.effective_row_count >= 100
+        and report.coverage_ratio >= 0.50
         and (report.seasonality_strength >= 0.30 or report.trend_strength >= 0.30)
         and report.volatility >= 0.25
     ):
@@ -85,6 +118,7 @@ def evaluate_rules(report: ProfileReport) -> list[RuleMatch]:
     if (
         report.effective_row_count >= 60
         and report.effective_row_count < 250
+        and report.coverage_ratio >= 0.50
         and (report.seasonality_strength >= 0.20 or report.trend_strength >= 0.20)
         and report.volatility < 0.70
     ):

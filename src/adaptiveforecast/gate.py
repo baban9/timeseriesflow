@@ -47,6 +47,8 @@ class ValidationGate:
         max_spike_ratio: float = 0.15,
         max_flatline_ratio: float = 0.50,
         max_sampling_irregularity: float = 0.60,
+        min_coverage_ratio: float = 0.0,
+        max_gap_seconds: float | None = None,
     ) -> None:
         if min_rows < 1:
             raise ValidationGateError("min_rows must be at least 1")
@@ -59,16 +61,22 @@ class ValidationGate:
         ):
             if not 0.0 <= value <= 1.0:
                 raise ValidationGateError(f"{name} must be between 0 and 1")
+        if not 0.0 <= min_coverage_ratio <= 1.0:
+            raise ValidationGateError("min_coverage_ratio must be between 0 and 1")
+        if max_gap_seconds is not None and max_gap_seconds <= 0:
+            raise ValidationGateError("max_gap_seconds must be positive when set")
         self.min_rows = min_rows
         self.max_missing_rate = max_missing_rate
         self.max_outlier_ratio = max_outlier_ratio
         self.max_spike_ratio = max_spike_ratio
         self.max_flatline_ratio = max_flatline_ratio
         self.max_sampling_irregularity = max_sampling_irregularity
+        self.min_coverage_ratio = min_coverage_ratio
+        self.max_gap_seconds = max_gap_seconds
 
     def validate(self, report: ProfileReport) -> GateResult:
         """Run all configured gates against a profile report."""
-        checks = (
+        checks: list[GateCheck] = [
             self._check_min_rows(report),
             self._check_max_rate(
                 "missing_rate",
@@ -95,8 +103,12 @@ class ValidationGate:
                 report.sampling_irregularity,
                 self.max_sampling_irregularity,
             ),
-        )
-        return GateResult(passed=all(check.passed for check in checks), checks=checks)
+        ]
+        if self.min_coverage_ratio > 0.0:
+            checks.append(self._check_min_coverage(report))
+        if self.max_gap_seconds is not None:
+            checks.append(self._check_max_gap(report))
+        return GateResult(passed=all(check.passed for check in checks), checks=tuple(checks))
 
     def _check_min_rows(self, report: ProfileReport) -> GateCheck:
         passed = report.effective_row_count >= self.min_rows
@@ -110,6 +122,41 @@ class ValidationGate:
             ),
             threshold=self.min_rows,
             observed=report.effective_row_count,
+        )
+
+    def _check_min_coverage(self, report: ProfileReport) -> GateCheck:
+        passed = report.coverage_ratio >= self.min_coverage_ratio
+        return GateCheck(
+            name="min_coverage_ratio",
+            passed=passed,
+            message=(
+                f"coverage_ratio {report.coverage_ratio:.3f} >= {self.min_coverage_ratio:.3f}"
+                if passed
+                else (
+                    f"coverage_ratio {report.coverage_ratio:.3f} below minimum "
+                    f"{self.min_coverage_ratio:.3f}"
+                )
+            ),
+            threshold=self.min_coverage_ratio,
+            observed=report.coverage_ratio,
+        )
+
+    def _check_max_gap(self, report: ProfileReport) -> GateCheck:
+        assert self.max_gap_seconds is not None
+        passed = report.max_gap_seconds <= self.max_gap_seconds
+        return GateCheck(
+            name="max_gap_seconds",
+            passed=passed,
+            message=(
+                f"max_gap_seconds {report.max_gap_seconds:.1f} <= {self.max_gap_seconds:.1f}"
+                if passed
+                else (
+                    f"max_gap_seconds {report.max_gap_seconds:.1f} exceeds maximum "
+                    f"{self.max_gap_seconds:.1f}"
+                )
+            ),
+            threshold=self.max_gap_seconds,
+            observed=report.max_gap_seconds,
         )
 
     def _check_max_rate(self, name: str, observed: float, threshold: float) -> GateCheck:

@@ -17,6 +17,7 @@ from adaptiveforecast.exceptions import (
     ValidationGateError,
 )
 from adaptiveforecast.gate import GateCheck, GateResult, ValidationGate
+from adaptiveforecast.preprocess import SparseGridResult, infer_median_freq, resample_to_grid
 from adaptiveforecast.recipe import ModelRecipe
 from adaptiveforecast.report import ProfileReport
 from adaptiveforecast.selection import ArchitectureRecommendation, ArchitectureSelectionResult
@@ -35,8 +36,11 @@ __all__ = [
     "ProfileAnalyzer",
     "ProfileAwareArchitectureSelection",
     "ProfileReport",
+    "SparseGridResult",
     "ValidationGate",
     "ValidationGateError",
+    "infer_median_freq",
+    "resample_to_grid",
 ]
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"

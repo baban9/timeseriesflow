@@ -8,7 +8,9 @@ import numpy as np
 import pandas as pd
 
 from adaptiveforecast.exceptions import ProfileAnalysisError
+from adaptiveforecast.preprocess import AggMethod, infer_median_freq, resample_to_grid
 from adaptiveforecast.report import ProfileReport
+from adaptiveforecast.sparse_metrics import calendar_metrics
 
 
 def _safe_ratio(numerator: float, denominator: float) -> float:
@@ -42,6 +44,9 @@ class ProfileAnalyzer:
         spike_sigma: float = 3.0,
         flatline_min_run: int = 3,
         seasonal_lags: tuple[int, ...] | None = None,
+        expected_freq: str | None = None,
+        infer_freq: bool = False,
+        grid_agg: AggMethod = "mean",
     ) -> None:
         if not value_column:
             raise ValueError("value_column must be a non-empty string")
@@ -54,6 +59,9 @@ class ProfileAnalyzer:
         self.spike_sigma = spike_sigma
         self.flatline_min_run = flatline_min_run
         self.seasonal_lags = seasonal_lags or self.DEFAULT_SEASONAL_LAGS
+        self.expected_freq = expected_freq
+        self.infer_freq = infer_freq
+        self.grid_agg = grid_agg
 
     def analyze(
         self,
@@ -62,8 +70,13 @@ class ProfileAnalyzer:
         metadata: dict[str, Any] | None = None,
     ) -> ProfileReport:
         """Compute a profile report for the given time series."""
-        series, timestamps = self._prepare_inputs(data)
+        series, timestamps, resolved_freq, coverage_ratio = self._prepare_sparse_inputs(data)
         row_count = len(series)
+        span_days = 0.0
+        max_gap_seconds = 0.0
+        observation_density = 0.0
+        if timestamps is not None:
+            span_days, max_gap_seconds, observation_density = calendar_metrics(timestamps)
 
         if row_count == 0:
             return ProfileReport(
@@ -76,6 +89,11 @@ class ProfileAnalyzer:
                 spike_ratio=0.0,
                 flatline_ratio=0.0,
                 sampling_irregularity=0.0,
+                coverage_ratio=coverage_ratio,
+                max_gap_seconds=max_gap_seconds,
+                observation_density=observation_density,
+                span_days=span_days,
+                expected_freq=resolved_freq,
                 metadata=metadata or {},
             )
 
@@ -96,8 +114,62 @@ class ProfileAnalyzer:
             spike_ratio=self._spike_ratio(observed),
             flatline_ratio=self._flatline_ratio(observed),
             sampling_irregularity=self._sampling_irregularity(timestamps),
+            coverage_ratio=coverage_ratio,
+            max_gap_seconds=max_gap_seconds,
+            observation_density=observation_density,
+            span_days=span_days,
+            expected_freq=resolved_freq,
             metadata=metadata or {},
         )
+
+    def _resolve_freq(self, timestamps: pd.Series | None) -> str | None:
+        if self.expected_freq:
+            return self.expected_freq
+        if self.infer_freq and timestamps is not None:
+            return infer_median_freq(timestamps)
+        return None
+
+    def _prepare_sparse_inputs(
+        self,
+        data: pd.DataFrame | pd.Series,
+    ) -> tuple[pd.Series, pd.Series | None, str | None, float]:
+        series, timestamps = self._prepare_inputs(data)
+        resolved_freq = self._resolve_freq(timestamps)
+        coverage_ratio = 1.0
+
+        if resolved_freq is None or timestamps is None:
+            return series, timestamps, resolved_freq, coverage_ratio
+
+        if isinstance(data, pd.DataFrame) and self.time_column is not None:
+            grid = resample_to_grid(
+                data,
+                time_column=self.time_column,
+                value_column=self.value_column,
+                freq=resolved_freq,
+                agg=self.grid_agg,
+            )
+            series = grid.frame[self.value_column]
+            timestamps = grid.frame[self.time_column]
+            coverage_ratio = grid.coverage_ratio
+            return series, timestamps, resolved_freq, coverage_ratio
+
+        if isinstance(data, pd.Series) and isinstance(data.index, pd.DatetimeIndex):
+            time_column = self.time_column or "timestamp"
+            temp = data.rename(self.value_column).reset_index()
+            temp.columns = [time_column, self.value_column]
+            grid = resample_to_grid(
+                temp,
+                time_column=time_column,
+                value_column=self.value_column,
+                freq=resolved_freq,
+                agg=self.grid_agg,
+            )
+            series = grid.frame[self.value_column]
+            timestamps = grid.frame[time_column]
+            coverage_ratio = grid.coverage_ratio
+            return series, timestamps, resolved_freq, coverage_ratio
+
+        return series, timestamps, resolved_freq, coverage_ratio
 
     def _prepare_inputs(
         self,

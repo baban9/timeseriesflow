@@ -72,6 +72,7 @@ def _match_to_recipe(match: RuleMatch) -> ModelRecipe:
 
 def _tags_for_model(model: str) -> tuple[str, ...]:
     mapping: dict[str, tuple[str, ...]] = {
+        "insufficient_data": ("gate", "sparse"),
         "naive": ("baseline", "simple"),
         "moving_average": ("baseline", "smooth"),
         "exponential_smoothing": ("statistical", "smoothing"),

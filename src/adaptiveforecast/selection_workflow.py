@@ -30,10 +30,14 @@ class ProfileAwareArchitectureSelection:
         time_column: str | None = None,
         value_column: str = "value",
         max_models: int = 3,
+        expected_freq: str | None = None,
+        infer_freq: bool = False,
     ) -> None:
         self.analyzer = analyzer or ProfileAnalyzer(
             time_column=time_column,
             value_column=value_column,
+            expected_freq=expected_freq,
+            infer_freq=infer_freq,
         )
         self.advisor = advisor or ModelAdvisor(max_models=max_models)
         self.gate = gate or ValidationGate()

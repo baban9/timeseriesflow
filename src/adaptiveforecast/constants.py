@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 SUPPORTED_RECIPES: tuple[str, ...] = (
+    "insufficient_data",
     "naive",
     "moving_average",
     "exponential_smoothing",

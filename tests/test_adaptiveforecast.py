@@ -89,6 +89,10 @@ def test_profile_report_to_dict() -> None:
         "spike_ratio",
         "flatline_ratio",
         "sampling_irregularity",
+        "coverage_ratio",
+        "max_gap_seconds",
+        "observation_density",
+        "span_days",
     }
 
 
