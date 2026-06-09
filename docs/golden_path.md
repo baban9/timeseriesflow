@@ -5,7 +5,7 @@ For new projects, use this two-layer pattern:
 1. **`@entity_flow`** to define per-entity processing logic
 2. **`EntityRunner`** to load data, retry failures, checkpoint progress, and report stats
 
-The legacy `Flow` + `FlowConfig` API remains available but is not recommended for new code. A deprecation warning is planned for v0.2.
+The legacy `Flow` + `FlowConfig` API remains available but is not recommended for new code. It emits a deprecation warning as of v0.2.
 
 ## When to use each API
 

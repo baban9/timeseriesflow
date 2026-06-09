@@ -33,10 +33,10 @@ It does **not** train models or produce forecasts. It recommends architecture re
 
 ## Install
 
-**v0.1.0** (from GitHub; PyPI publish planned for v0.2):
+**v0.2.0** (from GitHub; PyPI publish with this release):
 
 ```bash
-pip install git+https://github.com/baban9/timeseriesflow.git@v0.1.0
+pip install git+https://github.com/baban9/timeseriesflow.git@v0.2.0
 ```
 
 Development install:

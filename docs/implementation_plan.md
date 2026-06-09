@@ -32,14 +32,21 @@ Goal: Ship a usable MVP with core framework guarantees.
 
 Goal: Production readiness for early adopters.
 
-- [ ] Parallel entity execution (configurable workers)
-- [ ] Per-entity timeout support
-- [ ] Result validation hooks (schema checks on processor output)
-- [ ] Improved checkpoint compaction (dedupe JSONL)
-- [ ] `Flow` deprecation warning (steer users to `@entity_flow`)
-- [ ] Pre-commit hooks configuration
-- [ ] PyPI publish workflow
-- [ ] CI coverage threshold
+| Task | Status |
+|------|--------|
+| Sparse series profiling and entity grid alignment | Done |
+| CHANGELOG and v0.2.0 release notes | Done |
+| `Flow` deprecation warning | Done |
+| Sparse example in CI smoke tests | Done |
+| PyPI publish workflow (tag-triggered) | Done |
+| GitHub Release tag `v0.2.0` | Pending |
+| PyPI first publish (configure `pypi` environment + trusted publishing) | Pending |
+| Parallel entity execution (configurable workers) | Planned |
+| Per-entity timeout support | Planned |
+| Result validation hooks (schema checks on processor output) | Planned |
+| Improved checkpoint compaction (dedupe JSONL) | Planned |
+| Pre-commit hooks configuration | Planned |
+| CI coverage threshold | Planned |
 
 ## Phase 2: Extensibility (v0.3.0)
 

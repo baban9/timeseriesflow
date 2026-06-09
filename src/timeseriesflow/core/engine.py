@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+import warnings
 from typing import TYPE_CHECKING
 
 import pandas as pd
@@ -28,7 +29,7 @@ class Flow:
 
     .. note::
         Legacy API. Prefer ``@entity_flow`` with ``EntityRunner`` for new
-        projects. ``Flow`` will emit a deprecation warning starting in v0.2.
+        projects. ``Flow`` emits a deprecation warning as of v0.2.
     """
 
     def __init__(
@@ -38,6 +39,11 @@ class Flow:
         *,
         checkpoint: CheckpointBackend | CheckpointStore | None = None,
     ) -> None:
+        warnings.warn(
+            "Flow is deprecated; use @entity_flow with EntityRunner for new projects.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         validate_processor(processor)
         self.processor = processor
         self.config = config

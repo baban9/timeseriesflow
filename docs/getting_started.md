@@ -72,7 +72,7 @@ See [combined_workflow.md](combined_workflow.md).
 
 ## Legacy Flow API
 
-`Flow` + `FlowConfig` remains for existing code. A deprecation warning is planned for v0.2.
+`Flow` + `FlowConfig` remains for existing code. It emits a deprecation warning as of v0.2.
 
 ```python
 from timeseriesflow import Flow, FlowConfig, entity_processor
