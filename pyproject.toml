@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "timeseriesflow"
-version = "0.2.0"
+version = "0.2.1"
 description = "Entity-based time-series processing framework for Python"
 readme = "README.md"
 license = "MIT"
@@ -68,9 +68,12 @@ Issues = "https://github.com/baban9/timeseriesflow/issues"
 [tool.hatch.build]
 sources = ["src"]
 
+[tool.hatch.build.targets.wheel]
+packages = ["timeseriesflow", "adaptiveforecast"]
+
 [tool.hatch.build.targets.sdist]
+only-include = ["src"]
 include = [
-    "/src",
     "/tests",
     "/examples",
     "/docs",

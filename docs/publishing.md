@@ -41,9 +41,11 @@ If publish fails before trusted publishing is configured, complete steps 1 to 3,
 Verify:
 
 ```bash
-pip install timeseriesflow==0.2.0
+pip install timeseriesflow
 python -c "import timeseriesflow, adaptiveforecast; print(timeseriesflow.__version__, adaptiveforecast.__version__)"
 ```
+
+The wheel ships both `timeseriesflow` and `adaptiveforecast`. If `import adaptiveforecast` fails after install, upgrade to the latest patch release.
 
 ## Version bumps
 
