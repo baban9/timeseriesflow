@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Any
 
 import pandas as pd
 
@@ -52,6 +55,7 @@ class EntityRunner:
         flow: EntityFlow | EntityFlowFunction,
         checkpoint: CheckpointBackend | None = None,
         batch_size: int = 100,
+        workers: int = 1,
         retries: int = 3,
         resume: bool = True,
         fail_fast: bool = False,
@@ -61,13 +65,17 @@ class EntityRunner:
     ) -> None:
         if batch_size <= 0:
             raise ValueError("batch_size must be positive")
+        if workers < 1:
+            raise ValueError("workers must be at least 1")
         if retries < 1:
             raise ValueError("retries must be at least 1")
         self.source = source
         self.flow = self._resolve_flow(flow)
         self.checkpoint = checkpoint
         self.batch_size = batch_size
+        self.workers = workers
         self.retries = retries
+        self._sync_lock = threading.Lock()
         self.resume = resume
         self.fail_fast = fail_fast
         self.show_progress = show_progress
@@ -109,28 +117,24 @@ class EntityRunner:
 
         progress.start(len(pending), description="EntityRunner")
         try:
-            for batch_index, batch in enumerate(batches, start=1):
-                self._logger.info(
-                    "Processing batch %d/%d (%d entities)",
-                    batch_index,
-                    len(batches),
-                    len(batch),
+            if self.workers == 1:
+                total_retries = self._run_batches_sequential(
+                    batches=batches,
+                    grouped=grouped,
+                    progress=progress,
+                    memory_tracker=memory_tracker,
+                    results=results,
+                    total_retries=total_retries,
                 )
-                for entity_id in batch:
-                    memory_tracker.sample()
-                    entity_df = grouped.get_group(entity_id).copy()
-                    result, retry_count = self._run_entity_with_retries(entity_df, entity_id)
-                    total_retries += retry_count
-                    results.append(result)
-                    self._update_checkpoint(result)
-                    progress.advance(entity_id, success=result.success)
-
-                    if result.failed and self.fail_fast:
-                        raise EntityProcessingError(
-                            entity_id=entity_id,
-                            message="fail_fast enabled",
-                            cause=result.error,
-                        )
+            else:
+                total_retries = self._run_batches_parallel(
+                    batches=batches,
+                    grouped=grouped,
+                    progress=progress,
+                    memory_tracker=memory_tracker,
+                    results=results,
+                    total_retries=total_retries,
+                )
         finally:
             progress.stop()
 
@@ -154,6 +158,100 @@ class EntityRunner:
             summary.total_duration_seconds,
         )
         return summary
+
+    def _run_batches_sequential(
+        self,
+        *,
+        batches: list[list[EntityId]],
+        grouped: Any,
+        progress: ProgressTracker,
+        memory_tracker: MemoryTracker,
+        results: list[EntityResult],
+        total_retries: int,
+    ) -> int:
+        for batch_index, batch in enumerate(batches, start=1):
+            self._logger.info(
+                "Processing batch %d/%d (%d entities)",
+                batch_index,
+                len(batches),
+                len(batch),
+            )
+            for entity_id in batch:
+                memory_tracker.sample()
+                entity_df = grouped.get_group(entity_id).copy()
+                result, retry_count = self._run_entity_with_retries(entity_df, entity_id)
+                total_retries += retry_count
+                self._record_entity_result(
+                    result,
+                    progress=progress,
+                    results=results,
+                )
+                if result.failed and self.fail_fast:
+                    raise EntityProcessingError(
+                        entity_id=entity_id,
+                        message="fail_fast enabled",
+                        cause=result.error,
+                    )
+        return total_retries
+
+    def _run_batches_parallel(
+        self,
+        *,
+        batches: list[list[EntityId]],
+        grouped: Any,
+        progress: ProgressTracker,
+        memory_tracker: MemoryTracker,
+        results: list[EntityResult],
+        total_retries: int,
+    ) -> int:
+        self._logger.info("Parallel entity processing enabled (%d workers)", self.workers)
+        with ThreadPoolExecutor(max_workers=self.workers) as executor:
+            for batch_index, batch in enumerate(batches, start=1):
+                self._logger.info(
+                    "Processing batch %d/%d (%d entities, %d workers)",
+                    batch_index,
+                    len(batches),
+                    len(batch),
+                    min(self.workers, len(batch)),
+                )
+                futures = {
+                    executor.submit(
+                        self._run_entity_with_retries,
+                        grouped.get_group(entity_id).copy(),
+                        entity_id,
+                    ): entity_id
+                    for entity_id in batch
+                }
+                memory_tracker.sample()
+                for future in as_completed(futures):
+                    entity_id = futures[future]
+                    result, retry_count = future.result()
+                    total_retries += retry_count
+                    self._record_entity_result(
+                        result,
+                        progress=progress,
+                        results=results,
+                    )
+                    if result.failed and self.fail_fast:
+                        executor.shutdown(wait=False, cancel_futures=True)
+                        raise EntityProcessingError(
+                            entity_id=entity_id,
+                            message="fail_fast enabled",
+                            cause=result.error,
+                        )
+        return total_retries
+
+    def _record_entity_result(
+        self,
+        result: EntityResult,
+        *,
+        progress: ProgressTracker,
+        results: list[EntityResult],
+    ) -> None:
+        with self._sync_lock:
+            results.append(result)
+            self._update_checkpoint(result)
+            progress.advance(result.entity_id, success=result.success)
 
     def _load_completed_entities(self) -> set[EntityId]:
         if not self.resume or self.checkpoint is None:

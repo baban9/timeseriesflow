@@ -40,6 +40,7 @@ runner = EntityRunner(
     flow=process_device,
     checkpoint=LocalCheckpoint("./checkpoints"),
     batch_size=100,
+    workers=4,
     retries=3,
 )
 
@@ -55,6 +56,7 @@ print(summary.success_rate, summary.total_retries)
 | `flow` | required | `EntityFlow` or `@entity_flow` function |
 | `checkpoint` | `None` | Optional `CheckpointBackend` for resume |
 | `batch_size` | `100` | Entities processed per batch |
+| `workers` | `1` | Parallel entity workers per batch (`1` = sequential) |
 | `retries` | `3` | Attempts per entity before marking failed |
 | `resume` | `True` | Skip entities already in checkpoint |
 | `fail_fast` | `False` | Stop on first entity failure |
@@ -111,6 +113,27 @@ Rich progress bar shows per-entity status. Structured logs record batch boundari
 `batch_size` controls how many entities are grouped per batch for logging and operational clarity. All entity data is loaded once; batches do not reload the source.
 
 For very large datasets, combine `lazy=True` on the source with future chunked source APIs.
+
+## Parallel workers
+
+Set `workers` greater than `1` to process entities in a batch concurrently with a thread pool.
+
+```python
+runner = EntityRunner(
+    source=source,
+    flow=process_device,
+    batch_size=100,
+    workers=8,
+)
+```
+
+Notes:
+
+- Default is `workers=1` (sequential), matching prior behavior.
+- Effective concurrency per batch is `min(workers, batch_size)`.
+- Checkpoints and progress updates are thread-safe.
+- Best for I/O-bound or per-entity pandas work. CPU-heavy pure Python may still be limited by the GIL.
+- Processor functions must be thread-safe if they share mutable global state.
 
 ## Failure handling
 

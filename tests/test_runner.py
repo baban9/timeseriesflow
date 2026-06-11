@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import threading
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -51,6 +53,25 @@ def flaky_once(df: pd.DataFrame, ctx: EntityContext) -> dict[str, int]:
 @entity_flow(entity_key="device_id", time_key="timestamp")
 def always_fail(df: pd.DataFrame, ctx: EntityContext) -> dict[str, int]:
     raise ValueError("permanent failure")
+
+
+_parallel_lock = threading.Lock()
+_parallel_active = 0
+_parallel_peak = 0
+
+
+@entity_flow(entity_key="device_id", time_key="timestamp")
+def slow_count_rows(df: pd.DataFrame, ctx: EntityContext) -> dict[str, int]:
+    global _parallel_active, _parallel_peak
+    with _parallel_lock:
+        _parallel_active += 1
+        _parallel_peak = max(_parallel_peak, _parallel_active)
+    try:
+        time.sleep(0.05)
+        return {"rows": len(df)}
+    finally:
+        with _parallel_lock:
+            _parallel_active -= 1
 
 
 def test_entity_runner_basic(tmp_path: Path) -> None:
@@ -168,6 +189,64 @@ def test_entity_runner_invalid_batch_size(tmp_path: Path) -> None:
     source = CSVSource(csv_path, parse_dates=["timestamp"])
     with pytest.raises(ValueError, match="batch_size"):
         EntityRunner(source=source, flow=count_rows, batch_size=0)
+
+
+def test_entity_runner_parallel_workers(tmp_path: Path) -> None:
+    global _parallel_peak
+    _parallel_peak = 0
+    csv_path = tmp_path / "data.csv"
+    _write_csv(csv_path, devices=8)
+
+    schema = SourceSchema(required_columns=("device_id", "timestamp", "value"))
+    source = CSVSource(csv_path, parse_dates=["timestamp"], schema=schema)
+    runner = EntityRunner(
+        source=source,
+        flow=slow_count_rows,
+        workers=4,
+        batch_size=8,
+        show_progress=False,
+    )
+    summary = runner.run()
+
+    assert summary.succeeded == 8
+    assert _parallel_peak >= 2
+
+
+def test_entity_runner_parallel_checkpoint_resume(tmp_path: Path) -> None:
+    csv_path = tmp_path / "data.csv"
+    _write_csv(csv_path, devices=6)
+
+    schema = SourceSchema(required_columns=("device_id", "timestamp", "value"))
+    source = CSVSource(csv_path, parse_dates=["timestamp"], schema=schema)
+    checkpoint = LocalCheckpoint(tmp_path / "ckpt")
+    runner = EntityRunner(
+        source=source,
+        flow=count_rows,
+        checkpoint=checkpoint,
+        workers=3,
+        batch_size=3,
+        show_progress=False,
+    )
+    first = runner.run()
+    assert first.succeeded == 6
+
+    second = EntityRunner(
+        source=source,
+        flow=count_rows,
+        checkpoint=checkpoint,
+        workers=3,
+        show_progress=False,
+    ).run()
+    assert second.skipped == 6
+    assert second.processed == 0
+
+
+def test_entity_runner_invalid_workers(tmp_path: Path) -> None:
+    csv_path = tmp_path / "data.csv"
+    _write_csv(csv_path, devices=1)
+    source = CSVSource(csv_path, parse_dates=["timestamp"])
+    with pytest.raises(ValueError, match="workers"):
+        EntityRunner(source=source, flow=count_rows, workers=0)
 
 
 def test_entity_runner_success_rate(tmp_path: Path) -> None:

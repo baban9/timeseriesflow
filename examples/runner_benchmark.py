@@ -41,7 +41,7 @@ def lightweight_summary(df: pd.DataFrame, ctx: EntityContext) -> dict[str, float
     }
 
 
-def run_benchmark(*, devices: int, points: int, batch_size: int) -> None:
+def run_benchmark(*, devices: int, points: int, batch_size: int, workers: int) -> None:
     data_dir = Path("./.benchmark_data")
     data_dir.mkdir(exist_ok=True)
     csv_path = data_dir / f"devices_{devices}x{points}.csv"
@@ -62,8 +62,9 @@ def run_benchmark(*, devices: int, points: int, batch_size: int) -> None:
         source=source,
         flow=lightweight_summary,
         batch_size=batch_size,
+        workers=workers,
         retries=1,
-        show_progress=True,
+        show_progress=False,
     )
 
     started = time.perf_counter()
@@ -71,14 +72,16 @@ def run_benchmark(*, devices: int, points: int, batch_size: int) -> None:
     elapsed = time.perf_counter() - started
 
     entities_per_sec = summary.processed / elapsed if elapsed > 0 else 0.0
-    print(f"Devices: {devices}, points per device: {points}")
+    print(f"Devices: {devices}, points per device: {points}, workers: {workers}")
     print(f"Processed: {summary.processed}, batches: {summary.batches_processed}")
     print(f"Elapsed: {elapsed:.2f}s, throughput: {entities_per_sec:.1f} entities/sec")
     print(f"Peak memory: {summary.peak_memory_mb:.1f} MB")
 
 
 def main() -> None:
-    run_benchmark(devices=500, points=20, batch_size=100)
+    for workers in (1, 4):
+        print(f"\n--- workers={workers} ---")
+        run_benchmark(devices=500, points=20, batch_size=100, workers=workers)
 
 
 if __name__ == "__main__":
