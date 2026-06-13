@@ -1,0 +1,345 @@
+{
+  "generated_on": "2026-06-13",
+  "datasets": [
+    {
+      "dataset": "Intel Berkeley Lab",
+      "entity_key": "entity_id",
+      "value_key": "value",
+      "runs": [
+        {
+          "mode": "vanilla_pandas",
+          "elapsed_seconds": 0.007,
+          "entities_processed": 30,
+          "entities_per_second": 4457.02,
+          "gate_pass_rate": null,
+          "unique_models": null,
+          "routing_diversity_rate": null,
+          "model_distribution": {
+            "none": 30
+          },
+          "mean_coverage_ratio": null,
+          "entities_blocked": null,
+          "entities_cleared": null
+        },
+        {
+          "mode": "adaptiveforecast_loop",
+          "elapsed_seconds": 0.534,
+          "entities_processed": 30,
+          "entities_per_second": 56.2,
+          "gate_pass_rate": 0.9333333333333333,
+          "unique_models": 2,
+          "routing_diversity_rate": 0.06666666666666667,
+          "model_distribution": {
+            "moving_average": 28,
+            "none": 2
+          },
+          "mean_coverage_ratio": 0.6448,
+          "entities_blocked": 2,
+          "entities_cleared": 28,
+          "training_waste_avoided_rate": 0.0667
+        },
+        {
+          "mode": "timeseriesflow",
+          "elapsed_seconds": 0.11,
+          "entities_processed": 30,
+          "entities_per_second": 273.58,
+          "gate_pass_rate": null,
+          "unique_models": null,
+          "routing_diversity_rate": null,
+          "model_distribution": {
+            "none": 30
+          },
+          "mean_coverage_ratio": null,
+          "entities_blocked": null,
+          "entities_cleared": null
+        },
+        {
+          "mode": "full_stack",
+          "elapsed_seconds": 0.8,
+          "entities_processed": 30,
+          "entities_per_second": 37.52,
+          "gate_pass_rate": 0.9333333333333333,
+          "unique_models": 2,
+          "routing_diversity_rate": 0.06666666666666667,
+          "model_distribution": {
+            "moving_average": 28,
+            "none": 2
+          },
+          "mean_coverage_ratio": 0.6448,
+          "entities_blocked": 2,
+          "entities_cleared": 28,
+          "training_waste_avoided_rate": 0.0667
+        }
+      ],
+      "summary": {
+        "entities": 30,
+        "rows": 114372,
+        "median_rows_per_entity": 4000.0,
+        "min_rows_per_entity": 35,
+        "max_rows_per_entity": 4000,
+        "span_days": 4.833470884120371
+      },
+      "description": "Classic wireless sensor network with 54 motes and irregular sampling intervals.",
+      "dataset_key": "intel"
+    },
+    {
+      "dataset": "ETT Hourly (ETTh1)",
+      "entity_key": "entity_id",
+      "value_key": "value",
+      "runs": [
+        {
+          "mode": "vanilla_pandas",
+          "elapsed_seconds": 0.003,
+          "entities_processed": 7,
+          "entities_per_second": 2796.13,
+          "gate_pass_rate": null,
+          "unique_models": null,
+          "routing_diversity_rate": null,
+          "model_distribution": {
+            "none": 7
+          },
+          "mean_coverage_ratio": null,
+          "entities_blocked": null,
+          "entities_cleared": null
+        },
+        {
+          "mode": "adaptiveforecast_loop",
+          "elapsed_seconds": 0.107,
+          "entities_processed": 7,
+          "entities_per_second": 65.53,
+          "gate_pass_rate": 1.0,
+          "unique_models": 2,
+          "routing_diversity_rate": 0.14285714285714285,
+          "model_distribution": {
+            "moving_average": 6,
+            "residual_lstm": 1
+          },
+          "mean_coverage_ratio": 1.0,
+          "entities_blocked": 0,
+          "entities_cleared": 7,
+          "training_waste_avoided_rate": 0.0
+        },
+        {
+          "mode": "timeseriesflow",
+          "elapsed_seconds": 0.022,
+          "entities_processed": 7,
+          "entities_per_second": 320.65,
+          "gate_pass_rate": null,
+          "unique_models": null,
+          "routing_diversity_rate": null,
+          "model_distribution": {
+            "none": 7
+          },
+          "mean_coverage_ratio": null,
+          "entities_blocked": null,
+          "entities_cleared": null
+        },
+        {
+          "mode": "full_stack",
+          "elapsed_seconds": 0.098,
+          "entities_processed": 7,
+          "entities_per_second": 71.17,
+          "gate_pass_rate": 1.0,
+          "unique_models": 2,
+          "routing_diversity_rate": 0.14285714285714285,
+          "model_distribution": {
+            "moving_average": 6,
+            "residual_lstm": 1
+          },
+          "mean_coverage_ratio": 1.0,
+          "entities_blocked": 0,
+          "entities_cleared": 7,
+          "training_waste_avoided_rate": 0.0
+        }
+      ],
+      "summary": {
+        "entities": 7,
+        "rows": 28000,
+        "median_rows_per_entity": 4000.0,
+        "min_rows_per_entity": 4000,
+        "max_rows_per_entity": 4000,
+        "span_days": 166.625
+      },
+      "description": "Seven electricity transformer load channels on an hourly grid.",
+      "dataset_key": "ett"
+    },
+    {
+      "dataset": "UCI Household Power",
+      "entity_key": "entity_id",
+      "value_key": "value",
+      "runs": [
+        {
+          "mode": "vanilla_pandas",
+          "elapsed_seconds": 0.002,
+          "entities_processed": 3,
+          "entities_per_second": 1569.24,
+          "gate_pass_rate": null,
+          "unique_models": null,
+          "routing_diversity_rate": null,
+          "model_distribution": {
+            "none": 3
+          },
+          "mean_coverage_ratio": null,
+          "entities_blocked": null,
+          "entities_cleared": null
+        },
+        {
+          "mode": "adaptiveforecast_loop",
+          "elapsed_seconds": 0.089,
+          "entities_processed": 3,
+          "entities_per_second": 33.82,
+          "gate_pass_rate": 0.0,
+          "unique_models": 1,
+          "routing_diversity_rate": 0.0,
+          "model_distribution": {
+            "none": 3
+          },
+          "mean_coverage_ratio": 1.0,
+          "entities_blocked": 3,
+          "entities_cleared": 0,
+          "training_waste_avoided_rate": 1.0
+        },
+        {
+          "mode": "timeseriesflow",
+          "elapsed_seconds": 0.014,
+          "entities_processed": 3,
+          "entities_per_second": 212.7,
+          "gate_pass_rate": null,
+          "unique_models": null,
+          "routing_diversity_rate": null,
+          "model_distribution": {
+            "none": 3
+          },
+          "mean_coverage_ratio": null,
+          "entities_blocked": null,
+          "entities_cleared": null
+        },
+        {
+          "mode": "full_stack",
+          "elapsed_seconds": 0.049,
+          "entities_processed": 3,
+          "entities_per_second": 61.39,
+          "gate_pass_rate": 0.0,
+          "unique_models": 1,
+          "routing_diversity_rate": 0.0,
+          "model_distribution": {
+            "none": 3
+          },
+          "mean_coverage_ratio": 1.0,
+          "entities_blocked": 3,
+          "entities_cleared": 0,
+          "training_waste_avoided_rate": 1.0
+        }
+      ],
+      "summary": {
+        "entities": 3,
+        "rows": 12000,
+        "median_rows_per_entity": 4000.0,
+        "min_rows_per_entity": 4000,
+        "max_rows_per_entity": 4000,
+        "span_days": 2.777083333333333
+      },
+      "description": "Three residential sub-meter channels with minute-level power readings.",
+      "dataset_key": "uci"
+    }
+  ],
+  "conclusions": [
+    "Intel Berkeley Lab: full stack screened 37.5 entities/s vs 4457.0 for vanilla pandas; 7% training jobs avoided via gates.",
+    "Intel Berkeley Lab: 7% routing diversity with 2 unique model families.",
+    "ETT Hourly (ETTh1): full stack screened 71.2 entities/s vs 2796.1 for vanilla pandas; 0% training jobs avoided via gates.",
+    "ETT Hourly (ETTh1): 14% routing diversity with 2 unique model families.",
+    "UCI Household Power: full stack screened 61.4 entities/s vs 1569.2 for vanilla pandas; 100% training jobs avoided via gates.",
+    "UCI Household Power: 0% routing diversity with 1 unique model families.",
+    "TimeSeriesFlow adds operational structure; AdaptiveForecast adds screening and routing when entity quality and patterns differ."
+  ],
+  "commercial_kpis": [
+    {
+      "dataset": "Intel Berkeley Lab",
+      "entities": 30,
+      "rows": 114372,
+      "span_days": 4.8,
+      "gate_pass_rate": 0.9333,
+      "training_jobs_avoided_rate": 0.0667,
+      "entities_blocked": 2,
+      "entities_cleared": 28,
+      "routing_diversity_rate": 0.0667,
+      "unique_models_assigned": 2,
+      "screening_throughput_eps": 37.52,
+      "vanilla_throughput_eps": 4457.02,
+      "af_loop_throughput_eps": 56.2,
+      "mean_coverage_ratio": 0.6448,
+      "orchestration_overhead_vs_af": 0.266,
+      "profiling_cost_factor_vs_vanilla": 118.8,
+      "model_distribution": {
+        "moving_average": 28,
+        "none": 2
+      }
+    },
+    {
+      "dataset": "ETT Hourly (ETTh1)",
+      "entities": 7,
+      "rows": 28000,
+      "span_days": 166.6,
+      "gate_pass_rate": 1.0,
+      "training_jobs_avoided_rate": 0.0,
+      "entities_blocked": 0,
+      "entities_cleared": 7,
+      "routing_diversity_rate": 0.1429,
+      "unique_models_assigned": 2,
+      "screening_throughput_eps": 71.17,
+      "vanilla_throughput_eps": 2796.13,
+      "af_loop_throughput_eps": 65.53,
+      "mean_coverage_ratio": 1.0,
+      "orchestration_overhead_vs_af": -0.009,
+      "profiling_cost_factor_vs_vanilla": 39.3,
+      "model_distribution": {
+        "moving_average": 6,
+        "residual_lstm": 1
+      }
+    },
+    {
+      "dataset": "UCI Household Power",
+      "entities": 3,
+      "rows": 12000,
+      "span_days": 2.8,
+      "gate_pass_rate": 0.0,
+      "training_jobs_avoided_rate": 1.0,
+      "entities_blocked": 3,
+      "entities_cleared": 0,
+      "routing_diversity_rate": 0.0,
+      "unique_models_assigned": 1,
+      "screening_throughput_eps": 61.39,
+      "vanilla_throughput_eps": 1569.24,
+      "af_loop_throughput_eps": 33.82,
+      "mean_coverage_ratio": 1.0,
+      "orchestration_overhead_vs_af": -0.04,
+      "profiling_cost_factor_vs_vanilla": 25.6,
+      "model_distribution": {
+        "none": 3
+      }
+    }
+  ],
+  "portfolio_summary": {
+    "datasets_evaluated": 3,
+    "total_entities": 40,
+    "total_entities_blocked": 5,
+    "portfolio_training_jobs_avoided_rate": 0.125,
+    "mean_gate_pass_rate": 0.6444,
+    "mean_routing_diversity_rate": 0.0699,
+    "mean_screening_throughput_eps": 56.69,
+    "max_unique_models_assigned": 2
+  },
+  "pitch_highlights": [
+    "Across 3 datasets, 12.5% of entities would be blocked before model training.",
+    "Mean routing diversity is 7.0% with up to 2 unique architectures assigned.",
+    "Full-stack screening averages 56.7 entities per second.",
+    "UCI Household Power: 100% training waste avoided (3 of 3 entities blocked)."
+  ],
+  "figures": {
+    "throughput": "fig01_throughput.pdf",
+    "commercial_kpis": "fig02_commercial_kpis.pdf",
+    "screening": "fig03_screening_throughput.pdf",
+    "models_stacked": "fig04_model_distribution.pdf",
+    "kpi_heatmap": "fig05_kpi_heatmap.pdf"
+  }
+}
