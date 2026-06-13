@@ -28,7 +28,10 @@ def build_pdf_from_figures(
 
         order = [
             ("throughput", "Figure 1. Entity throughput by approach and dataset."),
-            ("commercial_kpis", "Figure 2. Training jobs avoided, routing diversity, unique models."),
+            (
+                "commercial_kpis",
+                "Figure 2. Training jobs avoided, routing diversity, unique models.",
+            ),
             ("screening", "Figure 3. Vanilla stats throughput vs full-stack screening."),
             ("models_stacked", "Figure 4. Model family assignment distribution."),
             ("kpi_heatmap", "Figure 5. Normalized KPI heatmap across datasets."),
@@ -57,6 +60,9 @@ def _title_page(
 ) -> None:
     fig, ax = plt.subplots(figsize=(8.27, 11.69))
     ax.axis("off")
+    avoided_pct = 100 * float(portfolio.get("portfolio_training_jobs_avoided_rate", 0))
+    diversity_pct = 100 * float(portfolio.get("mean_routing_diversity_rate", 0))
+    screening_eps = portfolio.get("mean_screening_throughput_eps", 0)
     lines = [
         "TimeSeriesFlow and AdaptiveForecast",
         "Comparative Evaluation and Commercial Impact Report",
@@ -66,9 +72,9 @@ def _title_page(
         "Portfolio summary",
         f"  Datasets: {portfolio.get('datasets_evaluated', 0)}",
         f"  Total entities: {portfolio.get('total_entities', 0)}",
-        f"  Training jobs avoided: {100 * float(portfolio.get('portfolio_training_jobs_avoided_rate', 0)):.1f}%",
-        f"  Mean routing diversity: {100 * float(portfolio.get('mean_routing_diversity_rate', 0)):.1f}%",
-        f"  Mean screening throughput: {portfolio.get('mean_screening_throughput_eps', 0):.1f} ent/s",
+        f"  Training jobs avoided: {avoided_pct:.1f}%",
+        f"  Mean routing diversity: {diversity_pct:.1f}%",
+        f"  Mean screening throughput: {screening_eps:.1f} ent/s",
         "",
         "Highlights",
     ]
@@ -100,13 +106,22 @@ def _kpi_table_page(pdf: PdfPages, kpis: list[dict[str, Any]]) -> None:
     rows = [header, "-" * len(header)]
     for kpi in kpis:
         rows.append(
-            f"{str(kpi['dataset']):<8} {kpi['entities']:>4} "
+            f"{kpi['dataset']!s:<8} {kpi['entities']:>4} "
             f"{100 * kpi['training_jobs_avoided_rate']:>6.1f}% "
             f"{100 * kpi['routing_diversity_rate']:>6.1f}% "
             f"{kpi['unique_models_assigned']:>7} "
             f"{kpi['screening_throughput_eps']:>7.1f} "
             f"{kpi.get('profiling_cost_factor_vs_vanilla', 0):>5.1f}x"
         )
-    ax.text(0.06, 0.94, "Commercial KPI table\n\n" + "\n".join(rows), va="top", ha="left", fontsize=9, family="monospace")
+    table_text = "Commercial KPI table\n\n" + "\n".join(rows)
+    ax.text(
+        0.06,
+        0.94,
+        table_text,
+        va="top",
+        ha="left",
+        fontsize=9,
+        family="monospace",
+    )
     pdf.savefig(fig, bbox_inches="tight")
     plt.close(fig)

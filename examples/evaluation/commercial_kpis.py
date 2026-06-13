@@ -12,7 +12,7 @@ def enrich_run_metrics(run: dict[str, Any]) -> dict[str, Any]:
     if gate_pass is not None:
         enriched["training_waste_avoided_rate"] = round(1.0 - float(gate_pass), 4)
         entities = int(run.get("entities_processed") or 0)
-        enriched["entities_blocked"] = int(round(entities * (1.0 - float(gate_pass))))
+        enriched["entities_blocked"] = round(entities * (1.0 - float(gate_pass)))
         enriched["entities_cleared"] = entities - enriched["entities_blocked"]
     return enriched
 
@@ -25,7 +25,7 @@ def compute_dataset_kpis(item: dict[str, Any]) -> dict[str, Any]:
 
     gate_pass = float(full_stack.get("gate_pass_rate") or 0.0)
     entities = int(item["summary"]["entities"])
-    blocked = int(round(entities * (1.0 - gate_pass)))
+    blocked = round(entities * (1.0 - gate_pass))
 
     return {
         "dataset": item.get("dataset") or item.get("dataset_key"),
@@ -108,13 +108,15 @@ def _build_pitch_highlights(
         f"Mean routing diversity is {100 * portfolio['mean_routing_diversity_rate']:.1f}% "
         f"with up to {portfolio['max_unique_models_assigned']} unique architectures assigned."
     )
+    screening_eps = portfolio["mean_screening_throughput_eps"]
     lines.append(
-        f"Full-stack screening averages {portfolio['mean_screening_throughput_eps']:.1f} entities per second."
+        f"Full-stack screening averages {screening_eps:.1f} entities per second."
     )
     for item in kpis:
         if item["training_jobs_avoided_rate"] >= 0.30:
+            avoided_pct = 100 * item["training_jobs_avoided_rate"]
             lines.append(
-                f"{item['dataset']}: {100 * item['training_jobs_avoided_rate']:.0f}% training waste avoided "
+                f"{item['dataset']}: {avoided_pct:.0f}% training waste avoided "
                 f"({item['entities_blocked']} of {item['entities']} entities blocked)."
             )
     return lines

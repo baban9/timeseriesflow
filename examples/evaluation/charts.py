@@ -170,8 +170,20 @@ def plot_screening_throughput(
     x = np.arange(len(datasets))
     width = 0.35
     fig, ax = plt.subplots(figsize=(7.2, 3.8))
-    ax.bar(x - width / 2, vanilla, width, label="Vanilla pandas (stats only)", color=PALETTE["vanilla_pandas"])
-    ax.bar(x + width / 2, screening, width, label="Full stack (profile + route)", color=PALETTE["full_stack"])
+    ax.bar(
+        x - width / 2,
+        vanilla,
+        width,
+        label="Vanilla pandas (stats only)",
+        color=PALETTE["vanilla_pandas"],
+    )
+    ax.bar(
+        x + width / 2,
+        screening,
+        width,
+        label="Full stack (profile + route)",
+        color=PALETTE["full_stack"],
+    )
     ax.set_ylabel("Throughput (entities s$^{-1}$)")
     ax.set_xlabel("Dataset")
     ax.set_xticks(x)

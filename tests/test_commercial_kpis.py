@@ -8,7 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "examples"))
 
-from evaluation.commercial_kpis import (
+from evaluation.commercial_kpis import (  # noqa: E402
     attach_kpis_to_payload,
     compute_dataset_kpis,
     compute_portfolio_summary,
