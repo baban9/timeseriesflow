@@ -46,6 +46,7 @@ parquet = [
     "pyarrow>=14",
 ]
 dev = [
+    "build>=1.0",
     "mypy>=1.8",
     "matplotlib>=3.8",
     "pandas-stubs>=2.0",
