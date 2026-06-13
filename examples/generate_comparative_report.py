@@ -15,7 +15,8 @@ sys.path.insert(0, str(ROOT / "examples"))
 sys.path.insert(0, str(ROOT / "src"))
 
 from evaluation.benchmark import run_dataset_benchmarks  # noqa: E402
-from evaluation.charts import generate_all_charts  # noqa: E402
+from evaluation.charts import generate_all_figures  # noqa: E402
+from evaluation.commercial_kpis import attach_kpis_to_payload  # noqa: E402
 from evaluation.datasets import (  # noqa: E402
     dataset_summary,
     load_ett_hourly,
@@ -25,6 +26,7 @@ from evaluation.datasets import (  # noqa: E402
     normalize_entity_frame,
 )
 from evaluation.latex_report import generate_latex_report, write_json_report  # noqa: E402
+from evaluation.pdf_fallback import build_pdf_from_figures  # noqa: E402
 
 FIXTURE_PATH = ROOT / "examples" / "evaluation" / "fixtures" / "intel_sample.csv"
 DEFAULT_CACHE = ROOT / ".evaluation_cache"
@@ -104,15 +106,18 @@ def _build_conclusions(results: list[dict[str, object]]) -> list[str]:
     for item in results:
         full_stack = next(run for run in item["runs"] if run["mode"] == "full_stack")
         vanilla = next(run for run in item["runs"] if run["mode"] == "vanilla_pandas")
+        avoided = 100 * (1.0 - float(full_stack.get("gate_pass_rate") or 0.0))
         lines.append(
-            f"{item['dataset']}: full stack processed "
+            f"{item['dataset']}: full stack screened "
             f"{full_stack['entities_per_second']:.1f} entities/s vs "
-            f"{vanilla['entities_per_second']:.1f} for vanilla pandas."
+            f"{vanilla['entities_per_second']:.1f} for vanilla pandas; "
+            f"{avoided:.0f}% training jobs avoided via gates."
         )
-        if full_stack["routing_diversity_rate"] is not None:
+        if full_stack.get("routing_diversity_rate") is not None:
             lines.append(
                 f"{item['dataset']}: {100 * float(full_stack['routing_diversity_rate']):.0f}% "
-                "of entities differ from the modal model under full stack routing."
+                "routing diversity with "
+                f"{full_stack.get('unique_models', 0)} unique model families."
             )
     lines.append(
         "TimeSeriesFlow adds operational structure; AdaptiveForecast adds screening and routing "
@@ -121,32 +126,43 @@ def _build_conclusions(results: list[dict[str, object]]) -> list[str]:
     return lines
 
 
-def compile_pdf(tex_path: Path) -> Path:
+def compile_pdf(tex_path: Path, payload: dict[str, object] | None = None) -> Path:
     pdf_path = tex_path.with_suffix(".pdf")
-    for command in (
-        ["pdflatex", "-interaction=nonstopmode", tex_path.name],
-        ["pdflatex", "-interaction=nonstopmode", tex_path.name],
-    ):
-        compiler = shutil.which(command[0])
-        if compiler is None:
-            break
-        subprocess.run(command, cwd=tex_path.parent, check=False, capture_output=True)
-
-    if pdf_path.exists():
-        return pdf_path
+    figures_dir = tex_path.parent / "figures"
 
     tectonic = shutil.which("tectonic")
     if tectonic is not None:
-        subprocess.run(
-            [tectonic, tex_path.name],
-            cwd=tex_path.parent,
-            check=True,
-            capture_output=True,
-        )
+        try:
+            subprocess.run(
+                [tectonic, tex_path.name],
+                cwd=tex_path.parent,
+                check=True,
+                capture_output=True,
+            )
+            if pdf_path.exists():
+                return pdf_path
+        except subprocess.CalledProcessError:
+            pass
+
+    pdflatex = shutil.which("pdflatex")
+    if pdflatex is not None:
+        for _ in range(2):
+            subprocess.run(
+                [pdflatex, "-interaction=nonstopmode", tex_path.name],
+                cwd=tex_path.parent,
+                check=False,
+                capture_output=True,
+            )
+        if pdf_path.exists():
+            return pdf_path
+
+    if payload is not None:
+        build_pdf_from_figures(payload, figures_dir, pdf_path)
         return pdf_path
 
     raise RuntimeError(
-        "No LaTeX compiler found. Install MacTeX, TeX Live, or tectonic, then rerun."
+        "No LaTeX compiler found and PDF fallback unavailable. "
+        "Install tectonic or TeX Live, then rerun."
     )
 
 
@@ -176,15 +192,18 @@ def build_report(
         )
         benchmark["summary"] = summary
         benchmark["description"] = config["description"]
+        benchmark["dataset_key"] = name
         results.append(benchmark)
 
-    figure_names = generate_all_charts(results, figures_dir)
     payload: dict[str, object] = {
         "generated_on": date.today().isoformat(),
         "datasets": results,
-        "figures": figure_names,
         "conclusions": _build_conclusions(results),
     }
+    attach_kpis_to_payload(payload)
+
+    figure_names = generate_all_figures(payload, figures_dir)
+    payload["figures"] = figure_names
 
     write_json_report(output_dir / "comparative_report.json", payload)
     tex_path = output_dir / "comparative_report.tex"
@@ -192,7 +211,7 @@ def build_report(
 
     pdf_path: Path | None = None
     if compile_pdf_flag:
-        pdf_path = compile_pdf(tex_path)
+        pdf_path = compile_pdf(tex_path, payload)
         payload["pdf"] = str(pdf_path)
     return payload
 
@@ -210,27 +229,29 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--workers", type=int, default=1)
     parser.add_argument(
         "--compile-pdf",
-        action="store_true",
-        help="Compile LaTeX to PDF if a compiler exists",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Compile LaTeX to PDF if a compiler exists (default: on)",
     )
     return parser
 
 
 def main() -> None:
     args = build_parser().parse_args()
+    compile_flag = args.compile_pdf
     payload = build_report(
         dataset_names=args.datasets,
         cache_dir=args.cache_dir,
         output_dir=args.output_dir,
         workers=args.workers,
-        compile_pdf_flag=args.compile_pdf,
+        compile_pdf_flag=compile_flag,
     )
     print(json.dumps({"output_dir": str(args.output_dir), "figures": payload["figures"]}, indent=2))
-    if args.compile_pdf and "pdf" in payload:
+    if compile_flag and "pdf" in payload:
         print(f"PDF written to {payload['pdf']}")
     else:
         print(f"LaTeX written to {args.output_dir / 'comparative_report.tex'}")
-        print("Compile with: cd reports/comparative_evaluation && pdflatex comparative_report.tex")
+        print("Compile with: cd reports/comparative_evaluation && tectonic comparative_report.tex")
 
 
 if __name__ == "__main__":

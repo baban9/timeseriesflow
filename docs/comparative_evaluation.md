@@ -38,7 +38,21 @@ chmod +x reports/build_comparative_pdf.sh
 | `reports/comparative_evaluation/comparative_report.tex` | LaTeX source |
 | `reports/comparative_evaluation/comparative_report.pdf` | Compiled PDF |
 | `reports/comparative_evaluation/comparative_report.json` | Raw metrics |
-| `reports/comparative_evaluation/figures/*.png` | Charts embedded in PDF |
+| `reports/comparative_evaluation/figures/*.png` | Chart PNG previews |
+| `reports/comparative_evaluation/figures/*.pdf` | Vector figures embedded in PDF |
+
+## Commercial KPIs in the report
+
+- Training jobs avoided (gate block rate)
+- Routing diversity and unique models assigned
+- Screening throughput (entities per second)
+- Mean data coverage ratio
+- Profiling cost factor vs vanilla pandas
+- Portfolio summary across all datasets
+
+## Figure quality
+
+Charts use publication styling: serif fonts, 300 DPI PNG, vector PDF companions, colorblind-safe palette, and panel labels (a-f). The LaTeX PDF embeds vector figures when compiled with tectonic or pdflatex. If no TeX compiler is available, a matplotlib PDF fallback is generated automatically.
 
 ## LaTeX requirement
 

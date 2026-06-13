@@ -269,9 +269,25 @@ def _routing_stats(outputs: list[dict[str, Any]]) -> dict[str, float | int]:
 
 def _benchmark_to_dict(run: BenchmarkRun) -> dict[str, Any]:
     model_distribution: dict[str, int] = {}
+    coverage_values: list[float] = []
     for item in run.outputs:
         model = str(item.get("best_model") or "none")
         model_distribution[model] = model_distribution.get(model, 0) + 1
+        if "coverage_ratio" in item:
+            coverage_values.append(float(item["coverage_ratio"]))
+    mean_coverage = (
+        round(sum(coverage_values) / len(coverage_values), 4) if coverage_values else None
+    )
+    entities_blocked = (
+        sum(1 for item in run.outputs if not item.get("gate_passed"))
+        if run.gate_pass_rate is not None
+        else None
+    )
+    entities_cleared = (
+        run.entities_processed - entities_blocked
+        if entities_blocked is not None
+        else None
+    )
     return {
         "mode": run.mode,
         "elapsed_seconds": round(run.elapsed_seconds, 3),
@@ -281,6 +297,9 @@ def _benchmark_to_dict(run: BenchmarkRun) -> dict[str, Any]:
         "unique_models": run.unique_models,
         "routing_diversity_rate": run.routing_diversity_rate,
         "model_distribution": model_distribution,
+        "mean_coverage_ratio": mean_coverage,
+        "entities_blocked": entities_blocked,
+        "entities_cleared": entities_cleared,
     }
 
 

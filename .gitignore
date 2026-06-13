@@ -19,6 +19,7 @@ venv/
 .timeseriesflow/
 examples/.checkpoints/
 .evaluation_cache/
+.vendor_pkgs/
 .evaluation_reports/
 .benchmark_data/
 reports/comparative_evaluation/*.aux
