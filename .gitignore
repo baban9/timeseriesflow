@@ -18,4 +18,7 @@ venv/
 .env
 .timeseriesflow/
 examples/.checkpoints/
+.evaluation_cache/
+.evaluation_reports/
+.benchmark_data/
 *.egg
