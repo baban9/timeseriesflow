@@ -191,7 +191,7 @@ def main() -> None:
 
     temp_csv = args.cache_dir / f"{dataset_name}_eval.csv"
     _write_temp_csv(frame, temp_csv)
-    summary = dataset_summary(frame)
+    summary = dataset_summary(frame, entity_key="moteid")
 
     performance_payload: dict[str, object]
     if args.routing_only:

@@ -141,6 +141,7 @@ python examples/architecture_selection.py    # full selection workflow
 | AdaptiveForecast intro | [docs/adaptiveforecast.md](docs/adaptiveforecast.md) |
 | Sparse time series | [docs/sparse_series.md](docs/sparse_series.md) |
 | Open-data evaluation | [docs/open_data_evaluation.md](docs/open_data_evaluation.md) |
+| Comparative PDF report | [docs/comparative_evaluation.md](docs/comparative_evaluation.md) |
 | Architecture selection | [docs/architecture_selection.md](docs/architecture_selection.md) |
 | Getting started | [docs/getting_started.md](docs/getting_started.md) |
 | EntityRunner | [docs/runner.md](docs/runner.md) |

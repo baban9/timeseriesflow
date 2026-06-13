@@ -21,4 +21,7 @@ examples/.checkpoints/
 .evaluation_cache/
 .evaluation_reports/
 .benchmark_data/
+reports/comparative_evaluation/*.aux
+reports/comparative_evaluation/*.log
+reports/comparative_evaluation/*.out
 *.egg
