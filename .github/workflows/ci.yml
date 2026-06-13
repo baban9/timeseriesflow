@@ -25,7 +25,7 @@ jobs:
           cache: pip
 
       - name: Install package
-        run: pip install -e ".[dev]"
+        run: pip install ".[dev]"
 
       - name: Verify package imports
         run: |

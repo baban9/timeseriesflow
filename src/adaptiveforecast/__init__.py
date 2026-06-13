@@ -43,4 +43,4 @@ __all__ = [
     "resample_to_grid",
 ]
 
-__version__ = "0.2.1"
+__version__ = "0.2.2"
