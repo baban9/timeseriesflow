@@ -7,6 +7,8 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
+from evaluation.verdict import status_label
+
 # ruff: noqa: E501
 
 
@@ -70,6 +72,106 @@ def _pitch_lines(highlights: list[str]) -> str:
     return "\n".join(f"  \\item {_tex_escape(line)}" for line in highlights)
 
 
+def _decision_table_rows(rows: list[dict[str, Any]]) -> str:
+    mode_keys = [
+        "vanilla_pandas",
+        "timeseriesflow",
+        "adaptiveforecast_loop",
+        "full_stack",
+    ]
+    lines: list[str] = []
+    for row in rows:
+        cells = " & ".join(
+            _tex_escape(status_label(row.get(key, "na"))) for key in mode_keys
+        )
+        lines.append(f"{_tex_escape(row['criterion'])} & {cells} \\\\")
+    return "\n".join(lines)
+
+
+def _product_verdict_block(key: str, verdict: dict[str, Any]) -> str:
+    title = {
+        "timeseriesflow": "TimeSeriesFlow",
+        "adaptiveforecast": "AdaptiveForecast",
+        "full_stack": "Full stack",
+    }[key]
+    effective = "\n".join(
+        f"  \\item {_tex_escape(line)}" for line in verdict.get("effective_for", [])
+    )
+    ineffective = "\n".join(
+        f"  \\item {_tex_escape(line)}" for line in verdict.get("not_effective_for", [])
+    )
+    return f"""
+\\subsection{{{title}}}
+\\noindent\\textbf{{Verdict ({_tex_escape(status_label(verdict.get('status', 'partial')))}):}}
+{_tex_escape(verdict.get('headline', ''))}
+
+\\textbf{{Use when:}}
+\\begin{{itemize}}
+{effective}
+\\end{{itemize}}
+
+\\textbf{{Do not use when:}}
+\\begin{{itemize}}
+{ineffective}
+\\end{{itemize}}
+"""
+
+
+def _verdict_section(verdict: dict[str, Any]) -> str:
+    if not verdict:
+        return ""
+    use_lines = "\n".join(f"  \\item {_tex_escape(line)}" for line in verdict.get("use_when", []))
+    avoid_lines = "\n".join(
+        f"  \\item {_tex_escape(line)}" for line in verdict.get("avoid_when", [])
+    )
+    products = verdict.get("product_verdicts") or {}
+    product_blocks = "".join(
+        _product_verdict_block(key, products[key])
+        for key in ("timeseriesflow", "adaptiveforecast", "full_stack")
+        if key in products
+    )
+    decision_notes = "\n".join(
+        f"  \\item \\textbf{{{_tex_escape(row['criterion'])}}}: {_tex_escape(row.get('note', ''))}"
+        for row in verdict.get("decision_table", [])
+    )
+    return f"""
+\\section{{Executive verdict}}
+\\noindent\\textbf{{Bottom line.}} {_tex_escape(verdict.get('executive_summary', ''))}
+
+\\subsection{{When to use the stack}}
+\\begin{{itemize}}
+{use_lines}
+\\end{{itemize}}
+
+\\subsection{{When not to use the stack}}
+\\begin{{itemize}}
+{avoid_lines}
+\\end{{itemize}}
+
+\\subsection{{Effectiveness decision table}}
+\\begin{{table}}[htbp]
+\\centering
+\\caption{{Pass or fail against benchmark criteria (Phase 1: no forecast accuracy test).}}
+\\label{{tab:decision}}
+\\small
+\\begin{{tabular}}{{p{{4.8cm}}cccc}}
+\\toprule
+Criterion & Pandas & TSFlow & AF loop & Full stack \\\\
+\\midrule
+{_decision_table_rows(verdict.get('decision_table', []))}
+\\bottomrule
+\\end{{tabular}}
+\\end{{table}}
+
+\\noindent\\textbf{{Notes.}}
+\\begin{{itemize}}
+{decision_notes}
+\\end{{itemize}}
+
+{product_blocks}
+"""
+
+
 def generate_latex_report(
     payload: dict[str, Any],
     *,
@@ -81,6 +183,7 @@ def generate_latex_report(
     per_dataset_kpis: list[dict[str, Any]] = payload.get("commercial_kpis") or []
     portfolio: dict[str, Any] = payload.get("portfolio_summary") or {}
     pitch_highlights: list[str] = payload.get("pitch_highlights") or []
+    verdict: dict[str, Any] = payload.get("verdict") or {}
 
     portfolio_blocked_pct = 100.0 * float(portfolio.get("portfolio_training_jobs_avoided_rate") or 0.0)
     portfolio_screening = float(portfolio.get("mean_screening_throughput_eps") or 0.0)
@@ -120,6 +223,8 @@ Approach & Seconds & Entities/s & Gate pass & Routing diversity \\\\
             "\\end{itemize}"
         )
 
+    verdict_section = _verdict_section(verdict)
+
     content = f"""
 \\documentclass[11pt,a4paper]{{article}}
 \\usepackage[margin=0.9in]{{geometry}}
@@ -146,13 +251,15 @@ Approach & Seconds & Entities/s & Gate pass & Routing diversity \\\\
 \\maketitle
 
 \\begin{{abstract}}
-We benchmark four entity processing approaches on three public multi-entity time series datasets:
-vanilla pandas loops, AdaptiveForecast profiling without orchestration, TimeSeriesFlow entity execution,
-and the combined full stack. Beyond throughput, we quantify operational key performance indicators:
-training jobs avoided by validation gates, routing diversity, unique model families assigned,
-and screening throughput. Results show that vanilla pandas remains fastest for simple statistics,
-while the full stack delivers profile-driven routing and blocks unfit entities before training spend accrues.
+We benchmark four entity processing approaches on three public multi-entity time series datasets.
+This Phase 1 report answers a single question: should you adopt TimeSeriesFlow, AdaptiveForecast,
+or the combined stack for your workload? We measure screening throughput, gate outcomes, routing
+diversity, and orchestration overhead. We do \\textbf{{not}} yet measure forecast accuracy (Phase 2).
+Vanilla pandas wins on raw speed for simple statistics. AdaptiveForecast blocks unfit entities and
+assigns model families. TimeSeriesFlow adds batch structure with modest overhead on lightweight work.
 \\end{{abstract}}
+
+{verdict_section}
 
 \\section{{Introduction}}
 Large fleets of heterogeneous time series create two recurring costs: wasted training on entities that fail quality gates,
@@ -260,20 +367,17 @@ Dataset & Entities & Jobs avoided & Diversity & Models & Screen (ent/s) & Cost f
 {''.join(dataset_sections)}
 
 \\section{{Discussion}}
-\\textbf{{When the stack delivers value.}}
-The full stack is justified when entity quality varies and a uniform model family risks silent underperformance.
-On Intel Berkeley and ETT Hourly, gates pass most entities while routing assigns multiple model families.
-Screening at roughly 50 entities/s supports nightly fleet batches without dedicated infrastructure.
+The executive verdict above is the primary takeaway. The sections below provide supporting metrics.
 
-\\textbf{{When vanilla pandas suffices.}}
-For small entity counts, exploratory analysis, or homogeneous series, a groupby loop remains the fastest path.
-The profiling cost factor (often 50--100$\\times$ versus vanilla) is acceptable only when avoided training jobs and
-routing accuracy have measurable downstream value.
+\\textbf{{How to read throughput charts.}}
+Do not treat vanilla pandas throughput as a forecast baseline. It computes mean and row count only.
+Full-stack throughput reflects profiling plus routing plus orchestration. Compare TimeSeriesFlow to
+pandas for orchestration tax; compare full stack to AdaptiveForecast-only for runner overhead.
 
 \\textbf{{Commercial framing.}}
-Lead with training jobs avoided and routing diversity when selling profile-driven forecasting.
-Lead with orchestration throughput and checkpoint readiness when selling batch reliability.
-Do not compete on raw pandas speed for simple aggregates.
+Lead with screening and routing when entity quality varies. Lead with orchestration when batch
+reliability matters. Do not sell on pandas speed. Phase 2 must add forecast error metrics before
+claiming model-selection effectiveness.
 
 \\section{{Conclusions}}
 \\begin{{itemize}}

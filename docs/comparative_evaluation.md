@@ -50,6 +50,18 @@ chmod +x reports/build_comparative_pdf.sh
 - Profiling cost factor vs vanilla pandas
 - Portfolio summary across all datasets
 
+## Phase 1 executive verdict
+
+The report opens with a clear effectiveness section:
+
+- Bottom-line executive summary
+- When to use / when not to use the stack
+- Decision table (Pass, Partial, Fail, Not tested) per product and criterion
+- Per-product verdict with use-when and do-not-use-when bullets
+- One-sentence conclusion per product (TimeSeriesFlow, AdaptiveForecast, full stack)
+
+Forecast accuracy is explicitly marked **Not tested** until Phase 2 backtest work lands.
+
 ## Figure quality
 
 Charts use publication styling: serif fonts, 300 DPI PNG, vector PDF companions, colorblind-safe palette, and panel labels (a-f). The LaTeX PDF embeds vector figures when compiled with tectonic or pdflatex. If no TeX compiler is available, a matplotlib PDF fallback is generated automatically.

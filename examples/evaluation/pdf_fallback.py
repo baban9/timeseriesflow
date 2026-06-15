@@ -24,7 +24,13 @@ def build_pdf_from_figures(
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with PdfPages(output_path) as pdf:
-        _title_page(pdf, payload.get("generated_on", ""), portfolio, highlights)
+        _title_page(
+            pdf,
+            payload.get("generated_on", ""),
+            portfolio,
+            highlights,
+            payload.get("verdict") or {},
+        )
 
         order = [
             ("throughput", "Figure 1. Entity throughput by approach and dataset."),
@@ -57,6 +63,7 @@ def _title_page(
     generated_on: str,
     portfolio: dict[str, Any],
     highlights: list[str],
+    verdict: dict[str, Any],
 ) -> None:
     fig, ax = plt.subplots(figsize=(8.27, 11.69))
     ax.axis("off")
@@ -65,9 +72,12 @@ def _title_page(
     screening_eps = portfolio.get("mean_screening_throughput_eps", 0)
     lines = [
         "TimeSeriesFlow and AdaptiveForecast",
-        "Comparative Evaluation and Commercial Impact Report",
+        "Comparative Evaluation Report (Phase 1)",
         "",
         f"Generated: {generated_on}",
+        "",
+        "Executive verdict",
+        f"  {verdict.get('executive_summary', 'Verdict not computed.')}",
         "",
         "Portfolio summary",
         f"  Datasets: {portfolio.get('datasets_evaluated', 0)}",
@@ -76,9 +86,15 @@ def _title_page(
         f"  Mean routing diversity: {diversity_pct:.1f}%",
         f"  Mean screening throughput: {screening_eps:.1f} ent/s",
         "",
-        "Highlights",
+        "Product one-liners",
     ]
-    lines.extend(f"  - {line}" for line in highlights[:6])
+    one_liners = verdict.get("one_liners") or {}
+    for key in ("timeseriesflow", "adaptiveforecast", "full_stack"):
+        if key in one_liners:
+            label = key.replace("_", " ").title()
+            lines.append(f"  {label}: {one_liners[key]}")
+    lines.extend(["", "Highlights"])
+    lines.extend(f"  - {line}" for line in highlights[:4])
     ax.text(0.08, 0.92, "\n".join(lines), va="top", ha="left", fontsize=11, family="serif")
     pdf.savefig(fig, bbox_inches="tight")
     plt.close(fig)

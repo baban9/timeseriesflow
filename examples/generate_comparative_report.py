@@ -27,6 +27,7 @@ from evaluation.datasets import (  # noqa: E402
 )
 from evaluation.latex_report import generate_latex_report, write_json_report  # noqa: E402
 from evaluation.pdf_fallback import build_pdf_from_figures  # noqa: E402
+from evaluation.verdict import attach_verdict_to_payload  # noqa: E402
 
 FIXTURE_PATH = ROOT / "examples" / "evaluation" / "fixtures" / "intel_sample.csv"
 DEFAULT_CACHE = ROOT / ".evaluation_cache"
@@ -102,28 +103,9 @@ def _load_dataset(name: str, cache_dir: Path) -> tuple[object, dict[str, object]
 
 
 def _build_conclusions(results: list[dict[str, object]]) -> list[str]:
-    lines: list[str] = []
-    for item in results:
-        full_stack = next(run for run in item["runs"] if run["mode"] == "full_stack")
-        vanilla = next(run for run in item["runs"] if run["mode"] == "vanilla_pandas")
-        avoided = 100 * (1.0 - float(full_stack.get("gate_pass_rate") or 0.0))
-        lines.append(
-            f"{item['dataset']}: full stack screened "
-            f"{full_stack['entities_per_second']:.1f} entities/s vs "
-            f"{vanilla['entities_per_second']:.1f} for vanilla pandas; "
-            f"{avoided:.0f}% training jobs avoided via gates."
-        )
-        if full_stack.get("routing_diversity_rate") is not None:
-            lines.append(
-                f"{item['dataset']}: {100 * float(full_stack['routing_diversity_rate']):.0f}% "
-                "routing diversity with "
-                f"{full_stack.get('unique_models', 0)} unique model families."
-            )
-    lines.append(
-        "TimeSeriesFlow adds operational structure; AdaptiveForecast adds screening and routing "
-        "when entity quality and patterns differ."
-    )
-    return lines
+    """Placeholder; replaced by attach_verdict_to_payload after KPIs are computed."""
+    _ = results
+    return []
 
 
 def compile_pdf(tex_path: Path, payload: dict[str, object] | None = None) -> Path:
@@ -201,6 +183,7 @@ def build_report(
         "conclusions": _build_conclusions(results),
     }
     attach_kpis_to_payload(payload)
+    attach_verdict_to_payload(payload)
 
     figure_names = generate_all_figures(payload, figures_dir)
     payload["figures"] = figure_names

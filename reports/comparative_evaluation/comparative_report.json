@@ -1,5 +1,5 @@
 {
-  "generated_on": "2026-06-13",
+  "generated_on": "2026-06-15",
   "datasets": [
     {
       "dataset": "Intel Berkeley Lab",
@@ -10,7 +10,7 @@
           "mode": "vanilla_pandas",
           "elapsed_seconds": 0.007,
           "entities_processed": 30,
-          "entities_per_second": 4457.02,
+          "entities_per_second": 4480.31,
           "gate_pass_rate": null,
           "unique_models": null,
           "routing_diversity_rate": null,
@@ -23,9 +23,9 @@
         },
         {
           "mode": "adaptiveforecast_loop",
-          "elapsed_seconds": 0.534,
+          "elapsed_seconds": 0.558,
           "entities_processed": 30,
-          "entities_per_second": 56.2,
+          "entities_per_second": 53.8,
           "gate_pass_rate": 0.9333333333333333,
           "unique_models": 2,
           "routing_diversity_rate": 0.06666666666666667,
@@ -40,9 +40,9 @@
         },
         {
           "mode": "timeseriesflow",
-          "elapsed_seconds": 0.11,
+          "elapsed_seconds": 0.159,
           "entities_processed": 30,
-          "entities_per_second": 273.58,
+          "entities_per_second": 188.98,
           "gate_pass_rate": null,
           "unique_models": null,
           "routing_diversity_rate": null,
@@ -55,9 +55,9 @@
         },
         {
           "mode": "full_stack",
-          "elapsed_seconds": 0.8,
+          "elapsed_seconds": 0.661,
           "entities_processed": 30,
-          "entities_per_second": 37.52,
+          "entities_per_second": 45.37,
           "gate_pass_rate": 0.9333333333333333,
           "unique_models": 2,
           "routing_diversity_rate": 0.06666666666666667,
@@ -89,9 +89,9 @@
       "runs": [
         {
           "mode": "vanilla_pandas",
-          "elapsed_seconds": 0.003,
+          "elapsed_seconds": 0.002,
           "entities_processed": 7,
-          "entities_per_second": 2796.13,
+          "entities_per_second": 2835.2,
           "gate_pass_rate": null,
           "unique_models": null,
           "routing_diversity_rate": null,
@@ -106,7 +106,7 @@
           "mode": "adaptiveforecast_loop",
           "elapsed_seconds": 0.107,
           "entities_processed": 7,
-          "entities_per_second": 65.53,
+          "entities_per_second": 65.59,
           "gate_pass_rate": 1.0,
           "unique_models": 2,
           "routing_diversity_rate": 0.14285714285714285,
@@ -121,9 +121,9 @@
         },
         {
           "mode": "timeseriesflow",
-          "elapsed_seconds": 0.022,
+          "elapsed_seconds": 0.021,
           "entities_processed": 7,
-          "entities_per_second": 320.65,
+          "entities_per_second": 333.33,
           "gate_pass_rate": null,
           "unique_models": null,
           "routing_diversity_rate": null,
@@ -136,9 +136,9 @@
         },
         {
           "mode": "full_stack",
-          "elapsed_seconds": 0.098,
+          "elapsed_seconds": 0.096,
           "entities_processed": 7,
-          "entities_per_second": 71.17,
+          "entities_per_second": 72.85,
           "gate_pass_rate": 1.0,
           "unique_models": 2,
           "routing_diversity_rate": 0.14285714285714285,
@@ -172,7 +172,7 @@
           "mode": "vanilla_pandas",
           "elapsed_seconds": 0.002,
           "entities_processed": 3,
-          "entities_per_second": 1569.24,
+          "entities_per_second": 1940.44,
           "gate_pass_rate": null,
           "unique_models": null,
           "routing_diversity_rate": null,
@@ -185,9 +185,9 @@
         },
         {
           "mode": "adaptiveforecast_loop",
-          "elapsed_seconds": 0.089,
+          "elapsed_seconds": 0.081,
           "entities_processed": 3,
-          "entities_per_second": 33.82,
+          "entities_per_second": 36.99,
           "gate_pass_rate": 0.0,
           "unique_models": 1,
           "routing_diversity_rate": 0.0,
@@ -201,9 +201,9 @@
         },
         {
           "mode": "timeseriesflow",
-          "elapsed_seconds": 0.014,
+          "elapsed_seconds": 0.013,
           "entities_processed": 3,
-          "entities_per_second": 212.7,
+          "entities_per_second": 223.07,
           "gate_pass_rate": null,
           "unique_models": null,
           "routing_diversity_rate": null,
@@ -218,7 +218,7 @@
           "mode": "full_stack",
           "elapsed_seconds": 0.049,
           "entities_processed": 3,
-          "entities_per_second": 61.39,
+          "entities_per_second": 60.64,
           "gate_pass_rate": 0.0,
           "unique_models": 1,
           "routing_diversity_rate": 0.0,
@@ -244,13 +244,10 @@
     }
   ],
   "conclusions": [
-    "Intel Berkeley Lab: full stack screened 37.5 entities/s vs 4457.0 for vanilla pandas; 7% training jobs avoided via gates.",
-    "Intel Berkeley Lab: 7% routing diversity with 2 unique model families.",
-    "ETT Hourly (ETTh1): full stack screened 71.2 entities/s vs 2796.1 for vanilla pandas; 0% training jobs avoided via gates.",
-    "ETT Hourly (ETTh1): 14% routing diversity with 2 unique model families.",
-    "UCI Household Power: full stack screened 61.4 entities/s vs 1569.2 for vanilla pandas; 100% training jobs avoided via gates.",
-    "UCI Household Power: 0% routing diversity with 1 unique model families.",
-    "TimeSeriesFlow adds operational structure; AdaptiveForecast adds screening and routing when entity quality and patterns differ."
+    "TimeSeriesFlow: Effective as an orchestration layer (14x slower than pandas on the same lightweight stats task; acceptable overhead for batch structure).",
+    "AdaptiveForecast: Partially effective: screening blocks unfit entities before training; routing assigns multiple model families where patterns differ; on UCI Household Power all entities failed gates (short span slice; screening-only outcome). Forecast accuracy was not tested.",
+    "Full stack: Partially effective when combines screening with batch orchestration and delivers per-entity routing in one pass at ~60 entities/s (+0.02s mean vs AdaptiveForecast-only loop). Not faster than pandas; value is operational plus screening, not speed.",
+    "Across 40 entities, TimeSeriesFlow is an orchestration layer (~14x pandas on stats-only work), AdaptiveForecast adds screening and routing on Intel Berkeley Lab, ETT Hourly (ETTh1), and forecast accuracy remains unmeasured. UCI Household Power blocked every entity under current gates (screening worked; not a deployment-ready forecast slice). Full-stack screening averages 60 entities/s."
   ],
   "commercial_kpis": [
     {
@@ -264,12 +261,12 @@
       "entities_cleared": 28,
       "routing_diversity_rate": 0.0667,
       "unique_models_assigned": 2,
-      "screening_throughput_eps": 37.52,
-      "vanilla_throughput_eps": 4457.02,
-      "af_loop_throughput_eps": 56.2,
+      "screening_throughput_eps": 45.37,
+      "vanilla_throughput_eps": 4480.31,
+      "af_loop_throughput_eps": 53.8,
       "mean_coverage_ratio": 0.6448,
-      "orchestration_overhead_vs_af": 0.266,
-      "profiling_cost_factor_vs_vanilla": 118.8,
+      "orchestration_overhead_vs_af": 0.103,
+      "profiling_cost_factor_vs_vanilla": 98.8,
       "model_distribution": {
         "moving_average": 28,
         "none": 2
@@ -286,12 +283,12 @@
       "entities_cleared": 7,
       "routing_diversity_rate": 0.1429,
       "unique_models_assigned": 2,
-      "screening_throughput_eps": 71.17,
-      "vanilla_throughput_eps": 2796.13,
-      "af_loop_throughput_eps": 65.53,
+      "screening_throughput_eps": 72.85,
+      "vanilla_throughput_eps": 2835.2,
+      "af_loop_throughput_eps": 65.59,
       "mean_coverage_ratio": 1.0,
-      "orchestration_overhead_vs_af": -0.009,
-      "profiling_cost_factor_vs_vanilla": 39.3,
+      "orchestration_overhead_vs_af": -0.011,
+      "profiling_cost_factor_vs_vanilla": 38.9,
       "model_distribution": {
         "moving_average": 6,
         "residual_lstm": 1
@@ -308,12 +305,12 @@
       "entities_cleared": 0,
       "routing_diversity_rate": 0.0,
       "unique_models_assigned": 1,
-      "screening_throughput_eps": 61.39,
-      "vanilla_throughput_eps": 1569.24,
-      "af_loop_throughput_eps": 33.82,
+      "screening_throughput_eps": 60.64,
+      "vanilla_throughput_eps": 1940.44,
+      "af_loop_throughput_eps": 36.99,
       "mean_coverage_ratio": 1.0,
-      "orchestration_overhead_vs_af": -0.04,
-      "profiling_cost_factor_vs_vanilla": 25.6,
+      "orchestration_overhead_vs_af": -0.032,
+      "profiling_cost_factor_vs_vanilla": 32.0,
       "model_distribution": {
         "none": 3
       }
@@ -326,15 +323,128 @@
     "portfolio_training_jobs_avoided_rate": 0.125,
     "mean_gate_pass_rate": 0.6444,
     "mean_routing_diversity_rate": 0.0699,
-    "mean_screening_throughput_eps": 56.69,
+    "mean_screening_throughput_eps": 59.62,
     "max_unique_models_assigned": 2
   },
   "pitch_highlights": [
     "Across 3 datasets, 12.5% of entities would be blocked before model training.",
     "Mean routing diversity is 7.0% with up to 2 unique architectures assigned.",
-    "Full-stack screening averages 56.7 entities per second.",
+    "Full-stack screening averages 59.6 entities per second.",
     "UCI Household Power: 100% training waste avoided (3 of 3 entities blocked)."
   ],
+  "verdict": {
+    "executive_summary": "Across 40 entities, TimeSeriesFlow is an orchestration layer (~14x pandas on stats-only work), AdaptiveForecast adds screening and routing on Intel Berkeley Lab, ETT Hourly (ETTh1), and forecast accuracy remains unmeasured. UCI Household Power blocked every entity under current gates (screening worked; not a deployment-ready forecast slice). Full-stack screening averages 60 entities/s.",
+    "product_verdicts": {
+      "timeseriesflow": {
+        "headline": "Effective as an orchestration layer (14x slower than pandas on the same lightweight stats task; acceptable overhead for batch structure).",
+        "effective_for": [
+          "Structured per-entity batch runs with retries and progress hooks",
+          "Teams that outgrow ad-hoc groupby loops but do not need profiling yet"
+        ],
+        "not_effective_for": [
+          "Beating pandas on simple mean and row-count aggregates",
+          "Proving forecast quality (orchestration only in this benchmark)"
+        ],
+        "status": "pass"
+      },
+      "adaptiveforecast": {
+        "headline": "Partially effective: screening blocks unfit entities before training; routing assigns multiple model families where patterns differ; on UCI Household Power all entities failed gates (short span slice; screening-only outcome). Forecast accuracy was not tested.",
+        "effective_for": [
+          "Screening entities that fail quality gates before training spend",
+          "Routing labels when entity patterns differ within a fleet"
+        ],
+        "not_effective_for": [
+          "Replacing pandas for raw speed on simple statistics",
+          "Claims of better forecasts without a Phase 2 accuracy backtest"
+        ],
+        "status": "partial"
+      },
+      "full_stack": {
+        "headline": "Partially effective when combines screening with batch orchestration and delivers per-entity routing in one pass at ~60 entities/s (+0.02s mean vs AdaptiveForecast-only loop). Not faster than pandas; value is operational plus screening, not speed.",
+        "effective_for": [
+          "Nightly screening plus orchestration on heterogeneous entity fleets",
+          "Workflows that need both gate outcomes and batch runner structure"
+        ],
+        "not_effective_for": [
+          "Small homogeneous fleets where a single model and a pandas loop suffice",
+          "Latency-sensitive paths that only need lightweight aggregates"
+        ],
+        "status": "partial"
+      }
+    },
+    "decision_table": [
+      {
+        "criterion": "Faster than pandas for the same lightweight stats task",
+        "vanilla_pandas": "pass",
+        "timeseriesflow": "partial",
+        "adaptiveforecast_loop": "fail",
+        "full_stack": "fail",
+        "note": "TimeSeriesFlow adds a mean 13.6x slowdown on stats-only work; profiling dominates full-stack cost."
+      },
+      {
+        "criterion": "Blocks unfit entities before model training",
+        "vanilla_pandas": "na",
+        "timeseriesflow": "na",
+        "adaptiveforecast_loop": "pass",
+        "full_stack": "pass",
+        "note": "5 of 40 entities blocked portfolio-wide. All entities blocked on: UCI Household Power."
+      },
+      {
+        "criterion": "Assigns different model families per entity",
+        "vanilla_pandas": "na",
+        "timeseriesflow": "na",
+        "adaptiveforecast_loop": "pass",
+        "full_stack": "pass",
+        "note": "Mean routing diversity 7.0%; up to 2 unique families assigned."
+      },
+      {
+        "criterion": "Forecast accuracy better than a single global model",
+        "vanilla_pandas": "na",
+        "timeseriesflow": "na",
+        "adaptiveforecast_loop": "not_tested",
+        "full_stack": "not_tested",
+        "note": "Phase 2 backtest not run. No MAE or sMAPE in this report."
+      },
+      {
+        "criterion": "Production batch ops (checkpoints, parallel workers, retries)",
+        "vanilla_pandas": "fail",
+        "timeseriesflow": "not_tested",
+        "adaptiveforecast_loop": "na",
+        "full_stack": "not_tested",
+        "note": "Benchmark used workers=1 and did not exercise checkpoint resume."
+      },
+      {
+        "criterion": "Screening throughput for nightly fleet batches",
+        "vanilla_pandas": "na",
+        "timeseriesflow": "na",
+        "adaptiveforecast_loop": "partial",
+        "full_stack": "partial",
+        "note": "Mean full-stack screening: 59.6 entities/s."
+      }
+    ],
+    "use_when": [
+      "Entity count is large enough that manual loops, retries, and progress matter",
+      "Entity quality varies and some series should be blocked before training",
+      "A single global model family is risky and per-entity routing is required",
+      "You accept profiling overhead in exchange for screening and orchestration"
+    ],
+    "avoid_when": [
+      "You only need exploratory mean, count, or simple aggregates on a small fleet",
+      "All entities are homogeneous and pass the same model family",
+      "You must prove forecast accuracy gains (not measured in Phase 1)",
+      "Raw pandas throughput is the primary success metric"
+    ],
+    "one_liners": {
+      "timeseriesflow": "Effective as an orchestration layer (14x slower than pandas on the same lightweight stats task; acceptable overhead for batch structure).",
+      "adaptiveforecast": "Partially effective: screening blocks unfit entities before training; routing assigns multiple model families where patterns differ; on UCI Household Power all entities failed gates (short span slice; screening-only outcome). Forecast accuracy was not tested.",
+      "full_stack": "Partially effective when combines screening with batch orchestration and delivers per-entity routing in one pass at ~60 entities/s (+0.02s mean vs AdaptiveForecast-only loop). Not faster than pandas; value is operational plus screening, not speed."
+    },
+    "metrics": {
+      "mean_orchestration_tax_vs_pandas": 13.6,
+      "mean_full_stack_overhead_vs_af_seconds": 0.02,
+      "mean_screening_throughput_eps": 59.62
+    }
+  },
   "figures": {
     "throughput": "fig01_throughput.pdf",
     "commercial_kpis": "fig02_commercial_kpis.pdf",

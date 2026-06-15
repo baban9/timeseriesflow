@@ -49,3 +49,5 @@ def test_comparative_report_fixture(tmp_path: Path) -> None:
     assert (output_dir / "figures" / "fig01_throughput.pdf").exists()
     assert "commercial_kpis" in payload
     assert "portfolio_summary" in payload
+    assert "verdict" in payload
+    assert "decision_table" in payload["verdict"]

@@ -17,19 +17,120 @@
 
 \title{\textbf{TimeSeriesFlow and AdaptiveForecast}\\[0.4em]\large Comparative Evaluation and Commercial Impact Report}
 \author{TimeSeriesFlow Open Benchmark}
-\date{2026-06-13}
+\date{2026-06-15}
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-We benchmark four entity processing approaches on three public multi-entity time series datasets:
-vanilla pandas loops, AdaptiveForecast profiling without orchestration, TimeSeriesFlow entity execution,
-and the combined full stack. Beyond throughput, we quantify operational key performance indicators:
-training jobs avoided by validation gates, routing diversity, unique model families assigned,
-and screening throughput. Results show that vanilla pandas remains fastest for simple statistics,
-while the full stack delivers profile-driven routing and blocks unfit entities before training spend accrues.
+We benchmark four entity processing approaches on three public multi-entity time series datasets.
+This Phase 1 report answers a single question: should you adopt TimeSeriesFlow, AdaptiveForecast,
+or the combined stack for your workload? We measure screening throughput, gate outcomes, routing
+diversity, and orchestration overhead. We do \textbf{not} yet measure forecast accuracy (Phase 2).
+Vanilla pandas wins on raw speed for simple statistics. AdaptiveForecast blocks unfit entities and
+assigns model families. TimeSeriesFlow adds batch structure with modest overhead on lightweight work.
 \end{abstract}
+
+
+\section{Executive verdict}
+\noindent\textbf{Bottom line.} Across 40 entities, TimeSeriesFlow is an orchestration layer (\textasciitilde{}14x pandas on stats-only work), AdaptiveForecast adds screening and routing on Intel Berkeley Lab, ETT Hourly (ETTh1), and forecast accuracy remains unmeasured. UCI Household Power blocked every entity under current gates (screening worked; not a deployment-ready forecast slice). Full-stack screening averages 60 entities/s.
+
+\subsection{When to use the stack}
+\begin{itemize}
+  \item Entity count is large enough that manual loops, retries, and progress matter
+  \item Entity quality varies and some series should be blocked before training
+  \item A single global model family is risky and per-entity routing is required
+  \item You accept profiling overhead in exchange for screening and orchestration
+\end{itemize}
+
+\subsection{When not to use the stack}
+\begin{itemize}
+  \item You only need exploratory mean, count, or simple aggregates on a small fleet
+  \item All entities are homogeneous and pass the same model family
+  \item You must prove forecast accuracy gains (not measured in Phase 1)
+  \item Raw pandas throughput is the primary success metric
+\end{itemize}
+
+\subsection{Effectiveness decision table}
+\begin{table}[htbp]
+\centering
+\caption{Pass or fail against benchmark criteria (Phase 1: no forecast accuracy test).}
+\label{tab:decision}
+\small
+\begin{tabular}{p{4.8cm}cccc}
+\toprule
+Criterion & Pandas & TSFlow & AF loop & Full stack \\
+\midrule
+Faster than pandas for the same lightweight stats task & Pass & Partial & Fail & Fail \\
+Blocks unfit entities before model training & N/A & N/A & Pass & Pass \\
+Assigns different model families per entity & N/A & N/A & Pass & Pass \\
+Forecast accuracy better than a single global model & N/A & N/A & Not tested & Not tested \\
+Production batch ops (checkpoints, parallel workers, retries) & Fail & Not tested & N/A & Not tested \\
+Screening throughput for nightly fleet batches & N/A & N/A & Partial & Partial \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent\textbf{Notes.}
+\begin{itemize}
+  \item \textbf{Faster than pandas for the same lightweight stats task}: TimeSeriesFlow adds a mean 13.6x slowdown on stats-only work; profiling dominates full-stack cost.
+  \item \textbf{Blocks unfit entities before model training}: 5 of 40 entities blocked portfolio-wide. All entities blocked on: UCI Household Power.
+  \item \textbf{Assigns different model families per entity}: Mean routing diversity 7.0\%; up to 2 unique families assigned.
+  \item \textbf{Forecast accuracy better than a single global model}: Phase 2 backtest not run. No MAE or sMAPE in this report.
+  \item \textbf{Production batch ops (checkpoints, parallel workers, retries)}: Benchmark used workers=1 and did not exercise checkpoint resume.
+  \item \textbf{Screening throughput for nightly fleet batches}: Mean full-stack screening: 59.6 entities/s.
+\end{itemize}
+
+
+\subsection{TimeSeriesFlow}
+\noindent\textbf{Verdict (Pass):}
+Effective as an orchestration layer (14x slower than pandas on the same lightweight stats task; acceptable overhead for batch structure).
+
+\textbf{Use when:}
+\begin{itemize}
+  \item Structured per-entity batch runs with retries and progress hooks
+  \item Teams that outgrow ad-hoc groupby loops but do not need profiling yet
+\end{itemize}
+
+\textbf{Do not use when:}
+\begin{itemize}
+  \item Beating pandas on simple mean and row-count aggregates
+  \item Proving forecast quality (orchestration only in this benchmark)
+\end{itemize}
+
+\subsection{AdaptiveForecast}
+\noindent\textbf{Verdict (Partial):}
+Partially effective: screening blocks unfit entities before training; routing assigns multiple model families where patterns differ; on UCI Household Power all entities failed gates (short span slice; screening-only outcome). Forecast accuracy was not tested.
+
+\textbf{Use when:}
+\begin{itemize}
+  \item Screening entities that fail quality gates before training spend
+  \item Routing labels when entity patterns differ within a fleet
+\end{itemize}
+
+\textbf{Do not use when:}
+\begin{itemize}
+  \item Replacing pandas for raw speed on simple statistics
+  \item Claims of better forecasts without a Phase 2 accuracy backtest
+\end{itemize}
+
+\subsection{Full stack}
+\noindent\textbf{Verdict (Partial):}
+Partially effective when combines screening with batch orchestration and delivers per-entity routing in one pass at \textasciitilde{}60 entities/s (+0.02s mean vs AdaptiveForecast-only loop). Not faster than pandas; value is operational plus screening, not speed.
+
+\textbf{Use when:}
+\begin{itemize}
+  \item Nightly screening plus orchestration on heterogeneous entity fleets
+  \item Workflows that need both gate outcomes and batch runner structure
+\end{itemize}
+
+\textbf{Do not use when:}
+\begin{itemize}
+  \item Small homogeneous fleets where a single model and a pandas loop suffice
+  \item Latency-sensitive paths that only need lightweight aggregates
+\end{itemize}
+
+
 
 \section{Introduction}
 Large fleets of heterogeneous time series create two recurring costs: wasted training on entities that fail quality gates,
@@ -66,7 +167,7 @@ All timed runs use a single worker unless noted. Metrics are computed on identic
 \section{Commercial key performance indicators}
 Table~\ref{tab:kpi} summarizes pitch-ready metrics derived from full-stack runs.
 Portfolio gate block rate is 12.5\% across 40 entities.
-Mean screening throughput is 56.7 entities/s.
+Mean screening throughput is 59.6 entities/s.
 
 \begin{table}[htbp]
 \centering
@@ -77,9 +178,9 @@ Mean screening throughput is 56.7 entities/s.
 \toprule
 Dataset & Entities & Jobs avoided & Diversity & Models & Screen (ent/s) & Cost factor \\
 \midrule
-Intel Berkeley Lab & 30 & 6.7\% & 6.7\% & 2 & 37.5 & 118.8$\times$ \\
-ETT Hourly (ETTh1) & 7 & 0.0\% & 14.3\% & 2 & 71.2 & 39.3$\times$ \\
-UCI Household Power & 3 & 100.0\% & 0.0\% & 1 & 61.4 & 25.6$\times$ \\
+Intel Berkeley Lab & 30 & 6.7\% & 6.7\% & 2 & 45.4 & 98.8$\times$ \\
+ETT Hourly (ETTh1) & 7 & 0.0\% & 14.3\% & 2 & 72.8 & 38.9$\times$ \\
+UCI Household Power & 3 & 100.0\% & 0.0\% & 1 & 60.6 & 32.0$\times$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -96,7 +197,7 @@ UCI Household Power & 3 & 100.0\% & 0.0\% & 1 & 61.4 & 25.6$\times$ \\
 \begin{itemize}
   \item Across 3 datasets, 12.5\% of entities would be blocked before model training.
   \item Mean routing diversity is 7.0\% with up to 2 unique architectures assigned.
-  \item Full-stack screening averages 56.7 entities per second.
+  \item Full-stack screening averages 59.6 entities per second.
   \item UCI Household Power: 100\% training waste avoided (3 of 3 entities blocked).
 \end{itemize}
 
@@ -150,10 +251,10 @@ Classic wireless sensor network with 54 motes and irregular sampling intervals.
 \toprule
 Approach & Seconds & Entities/s & Gate pass & Routing diversity \\
 \midrule
-vanilla\_pandas & 0.01 & 4457.02 & --- & --- \\
-adaptiveforecast\_loop & 0.53 & 56.20 & 93.3\% & 6.7\% \\
-timeseriesflow & 0.11 & 273.58 & --- & --- \\
-full\_stack & 0.80 & 37.52 & 93.3\% & 6.7\% \\
+vanilla\_pandas & 0.01 & 4480.31 & --- & --- \\
+adaptiveforecast\_loop & 0.56 & 53.80 & 93.3\% & 6.7\% \\
+timeseriesflow & 0.16 & 188.98 & --- & --- \\
+full\_stack & 0.66 & 45.37 & 93.3\% & 6.7\% \\
 \bottomrule
 \end{tabular}
 
@@ -167,10 +268,10 @@ Seven electricity transformer load channels on an hourly grid.
 \toprule
 Approach & Seconds & Entities/s & Gate pass & Routing diversity \\
 \midrule
-vanilla\_pandas & 0.00 & 2796.13 & --- & --- \\
-adaptiveforecast\_loop & 0.11 & 65.53 & 100.0\% & 14.3\% \\
-timeseriesflow & 0.02 & 320.65 & --- & --- \\
-full\_stack & 0.10 & 71.17 & 100.0\% & 14.3\% \\
+vanilla\_pandas & 0.00 & 2835.20 & --- & --- \\
+adaptiveforecast\_loop & 0.11 & 65.59 & 100.0\% & 14.3\% \\
+timeseriesflow & 0.02 & 333.33 & --- & --- \\
+full\_stack & 0.10 & 72.85 & 100.0\% & 14.3\% \\
 \bottomrule
 \end{tabular}
 
@@ -184,10 +285,10 @@ Three residential sub-meter channels with minute-level power readings.
 \toprule
 Approach & Seconds & Entities/s & Gate pass & Routing diversity \\
 \midrule
-vanilla\_pandas & 0.00 & 1569.24 & --- & --- \\
-adaptiveforecast\_loop & 0.09 & 33.82 & 0.0\% & 0.0\% \\
-timeseriesflow & 0.01 & 212.70 & --- & --- \\
-full\_stack & 0.05 & 61.39 & 0.0\% & 0.0\% \\
+vanilla\_pandas & 0.00 & 1940.44 & --- & --- \\
+adaptiveforecast\_loop & 0.08 & 36.99 & 0.0\% & 0.0\% \\
+timeseriesflow & 0.01 & 223.07 & --- & --- \\
+full\_stack & 0.05 & 60.64 & 0.0\% & 0.0\% \\
 \bottomrule
 \end{tabular}
 
@@ -196,30 +297,24 @@ full\_stack & 0.05 & 61.39 & 0.0\% & 0.0\% \\
 
 
 \section{Discussion}
-\textbf{When the stack delivers value.}
-The full stack is justified when entity quality varies and a uniform model family risks silent underperformance.
-On Intel Berkeley and ETT Hourly, gates pass most entities while routing assigns multiple model families.
-Screening at roughly 50 entities/s supports nightly fleet batches without dedicated infrastructure.
+The executive verdict above is the primary takeaway. The sections below provide supporting metrics.
 
-\textbf{When vanilla pandas suffices.}
-For small entity counts, exploratory analysis, or homogeneous series, a groupby loop remains the fastest path.
-The profiling cost factor (often 50--100$\times$ versus vanilla) is acceptable only when avoided training jobs and
-routing accuracy have measurable downstream value.
+\textbf{How to read throughput charts.}
+Do not treat vanilla pandas throughput as a forecast baseline. It computes mean and row count only.
+Full-stack throughput reflects profiling plus routing plus orchestration. Compare TimeSeriesFlow to
+pandas for orchestration tax; compare full stack to AdaptiveForecast-only for runner overhead.
 
 \textbf{Commercial framing.}
-Lead with training jobs avoided and routing diversity when selling profile-driven forecasting.
-Lead with orchestration throughput and checkpoint readiness when selling batch reliability.
-Do not compete on raw pandas speed for simple aggregates.
+Lead with screening and routing when entity quality varies. Lead with orchestration when batch
+reliability matters. Do not sell on pandas speed. Phase 2 must add forecast error metrics before
+claiming model-selection effectiveness.
 
 \section{Conclusions}
 \begin{itemize}
-  \item Intel Berkeley Lab: full stack screened 37.5 entities/s vs 4457.0 for vanilla pandas; 7\% training jobs avoided via gates.
-  \item Intel Berkeley Lab: 7\% routing diversity with 2 unique model families.
-  \item ETT Hourly (ETTh1): full stack screened 71.2 entities/s vs 2796.1 for vanilla pandas; 0\% training jobs avoided via gates.
-  \item ETT Hourly (ETTh1): 14\% routing diversity with 2 unique model families.
-  \item UCI Household Power: full stack screened 61.4 entities/s vs 1569.2 for vanilla pandas; 100\% training jobs avoided via gates.
-  \item UCI Household Power: 0\% routing diversity with 1 unique model families.
-  \item TimeSeriesFlow adds operational structure; AdaptiveForecast adds screening and routing when entity quality and patterns differ.
+  \item TimeSeriesFlow: Effective as an orchestration layer (14x slower than pandas on the same lightweight stats task; acceptable overhead for batch structure).
+  \item AdaptiveForecast: Partially effective: screening blocks unfit entities before training; routing assigns multiple model families where patterns differ; on UCI Household Power all entities failed gates (short span slice; screening-only outcome). Forecast accuracy was not tested.
+  \item Full stack: Partially effective when combines screening with batch orchestration and delivers per-entity routing in one pass at \textasciitilde{}60 entities/s (+0.02s mean vs AdaptiveForecast-only loop). Not faster than pandas; value is operational plus screening, not speed.
+  \item Across 40 entities, TimeSeriesFlow is an orchestration layer (\textasciitilde{}14x pandas on stats-only work), AdaptiveForecast adds screening and routing on Intel Berkeley Lab, ETT Hourly (ETTh1), and forecast accuracy remains unmeasured. UCI Household Power blocked every entity under current gates (screening worked; not a deployment-ready forecast slice). Full-stack screening averages 60 entities/s.
 \end{itemize}
 
 \vspace{0.5cm}
